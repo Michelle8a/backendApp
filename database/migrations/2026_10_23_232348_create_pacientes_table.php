@@ -17,9 +17,9 @@ return new class extends Migration
             $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
             $table->foreignId('idioma_id')->constrained('idiomas')->onDelete('cascade');
 
-            $table->string('nombre', 100);
-            $table->string('apellido', 100);
-            $table->string('dui_cifrado', 15);
+            $table->string('nombres', 100);
+            $table->string('apellidos', 100);
+            $table->text('dui_cifrado');
             $table->date('fecha_nacimiento');
             $table->enum('sexo', ['M', 'F', 'Otro']);
             $table->string('tipo_sangre', 3);
