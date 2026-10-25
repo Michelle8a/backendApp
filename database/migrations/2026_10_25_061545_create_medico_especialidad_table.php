@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('medico_especialidad', function (Blueprint $table) {
             
-            $table->foreach('medico_id')->references('id')->on('medicos')->onDelete('cascade');
-            $table->foreach('especialidad_id')->references('id')->on('especialidades')->onDelete('cascade');
+            $table->foreignId('medico_id')->constrained('medicos')->cascadeOnDelete();
+            $table->foreignId('especialidad_id')->constrained('especialidades')->cascadeOnDelete();
 
             $table->primary(['medico_id', 'especialidad_id']);
         
