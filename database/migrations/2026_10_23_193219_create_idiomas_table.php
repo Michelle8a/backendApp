@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nombre', 50)->unique();
             $table->string('codigo', 5);
-            $table->timestamps();
+            //$table->timestamps();
         });
     }
 
