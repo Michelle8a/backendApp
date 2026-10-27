@@ -18,7 +18,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
 
-            IdiomaSeeder::class
+            IdiomaSeeder::class,
+            AlergiaSeeder::class,
+            EnfermedadSeeder::class
         ]);
     }
 }

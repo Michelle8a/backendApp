@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('alergias', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 100)->unique();
-            $table->timestamps();
+            
+            //$table->timestamps();
         });
     }
 
