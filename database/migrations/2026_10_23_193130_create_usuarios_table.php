@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('consentimiento_aceptado');
             $table->dateTime('consentimiento_fecha');
             $table->string('consentimiento_version', 10);
+            $table->enum('estado', ['activo', 'suspendido'])->default('activo');
             
             $table->timestamps();
         });

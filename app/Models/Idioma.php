@@ -14,4 +14,12 @@ class Idioma extends Model
     ];
 
     public $timestamps = false;
+
+
+
+    //------------RELACIONES---------------
+
+    public function pacientes(){
+        return $this->hasMany(Paciente::class); //uno a muchos
+    }
 }
