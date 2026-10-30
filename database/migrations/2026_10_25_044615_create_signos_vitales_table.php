@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('signos_vitales', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('paciente_id')->constrained('pacientes');
+            $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('restrict');
 
             $table->integer('presion_sistolica');
             $table->integer('presion_diastolica');

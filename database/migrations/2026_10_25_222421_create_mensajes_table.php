@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('mensajes', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('conversacion_id')->constrained('conversaciones')->cascadeOnDelete();
-            $table->foreignId('emisor_id')->constrained('usuarios');
+            $table->foreignId('conversacion_id')->constrained('conversaciones')->onDelete('cascade');
+            $table->foreignId('emisor_id')->constrained('usuarios')->onDelete('restrict');
 
             $table->enum('tipo', ['texto', 'imagen', 'archivo', 'bot']);
             $table->text('contenido_cifrado');

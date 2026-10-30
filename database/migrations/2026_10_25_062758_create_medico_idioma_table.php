@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('medico_idioma', function (Blueprint $table) {
             
-            $table->foreignId('medico_id')->constrained('medicos');
-            $table->foreignId('idioma_id')->constrained('idiomas');
+            $table->foreignId('medico_id')->constrained('medicos')->onDelete('cascade');
+            $table->foreignId('idioma_id')->constrained('idiomas')->onDelete('restrict');
 
             $table->primary(['medico_id', 'idioma_id']);
 

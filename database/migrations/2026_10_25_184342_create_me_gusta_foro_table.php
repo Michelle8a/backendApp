@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('me_gusta_foro', function (Blueprint $table) {
             
-            $table->foreignId('publicacion_id')->constrained('publicaciones_foro');
-            $table->foreignId('autor_id')->constrained('usuarios');
+            $table->foreignId('publicacion_id')->constrained('publicaciones_foro')->onDelete('cascade');
+            $table->foreignId('autor_id')->constrained('usuarios')->onDelete('cascade');
 
             $table->primary(['publicacion_id', 'autor_id']);
             

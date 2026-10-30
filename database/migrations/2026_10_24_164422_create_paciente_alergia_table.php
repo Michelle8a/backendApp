@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('paciente_alergia', function (Blueprint $table) {
 
             $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('cascade');
-            $table->foreignId('alergia_id')->constrained('alergias')->onDelete('cascade');
+            $table->foreignId('alergia_id')->constrained('alergias')->onDelete('restrict');
 
             $table->enum('gravedad', ['leve', 'moderada', 'grave']);
 

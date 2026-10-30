@@ -22,7 +22,7 @@ class Categoria_ForoSeeder extends Seeder
         ];
 
         foreach ($categorias as $nombre) {
-            CategoriaForo::firstOrCreate(['nombre' => $nombre]);
+            Categoria_Foro::firstOrCreate(['nombre' => $nombre]);
         }
     }
 }

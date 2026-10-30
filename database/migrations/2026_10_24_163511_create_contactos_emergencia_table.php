@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('contactos_emergencia', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('paciente_id')->constrained('pacientes');
+            $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('cascade');
+
             $table->string('nombre', 120);
             $table->string('telefono', 20);
             $table->string('parentesco', 50);

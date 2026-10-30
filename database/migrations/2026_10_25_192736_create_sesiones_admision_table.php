@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('sesiones_admision', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('cita_id')->constrained('citas')->unique();
-            $table->foreignId('paciente_id')->constrained('pacientes');
+            $table->foreignId('cita_id')->constrained('citas')->unique()->onDelete('restrict');
+            $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('restrict');
 
             $table->enum('estado',['en_progreso', 'completada', 'abandonada']);
             $table->enum('nivel_urgencia',['baja', 'media', 'alta', 'emergencia']);

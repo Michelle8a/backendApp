@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('resultados_laboratorio', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('id_paciente')->constrained('pacientes');
+            $table->foreignId('id_paciente')->constrained('pacientes')->onDelete('restrict');
 
             $table->string('tipo_prueba', 120);
             $table->string('archivo_url');

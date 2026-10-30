@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('medicos', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
-            $table->foreignId('centro_salud_id')->constrained('centros_salud')->onDelete('cascade');
+            $table->foreignId('usuario_id')->constrained('usuarios')->unique()->onDelete('restrict');
+            $table->foreignId('centro_salud_id')->constrained('centros_salud')->onDelete('restrict');
 
             $table->string('jvpm', 100);
             $table->string('nombres', 100);

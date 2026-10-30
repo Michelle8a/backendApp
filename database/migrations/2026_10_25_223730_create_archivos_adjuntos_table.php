@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('archivos_adjuntos', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('paciente_id')->constrained('pacientes');
+            $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('restrict');
             $table->foreignId('historial_id')->constrained('historial_medico')->nullable();
             $table->foreignId('sesion_id')->constrained('sesiones_admision')->nullable();
 

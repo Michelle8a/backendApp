@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('codigo', 30)->unique();
 
-            $table->foreignId('paciente_id')->constrained('pacientes');
-            $table->foreignId('medico_id')->constrained('medicos');
-            $table->foreignId('cita_id')->constrained('citas');
+            $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('restrict');
+            $table->foreignId('medico_id')->constrained('medicos')->onDelete('restrict');
+            $table->foreignId('cita_id')->constrained('citas')->onDelete('restrict');
 
             $table->enum('estado', ['vigente', 'dispensada', 'vencida']);
             $table->string('firma_digital');

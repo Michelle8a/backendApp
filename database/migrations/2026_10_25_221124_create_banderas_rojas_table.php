@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('banderas_rojas', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('cita_id')->constrained('citas');
-            $table->timestamp('creado_en');
+            $table->foreignId('cita_id')->constrained('citas')->onDelete('cascade');
+            $table->timestamp('creado_en')->useCurrent();
 
-            $table->timestamps(); //quitar
+            //$table->timestamps();
         });
     }
 

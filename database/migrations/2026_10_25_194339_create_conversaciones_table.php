@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('conversaciones', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('cita_id')->constrained('citas');
+            $table->foreignId('cita_id')->constrained('citas')->onDelete('restrict');
+            
             $table->timestamp('creado_en');
 
             $table->timestamps();

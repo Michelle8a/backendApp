@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('pacientes', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
-            $table->foreignId('idioma_id')->constrained('idiomas')->onDelete('cascade');
+            $table->foreignId('usuario_id')->constrained('usuarios')->unique()->onDelete('restrict');
+            $table->foreignId('idioma_id')->constrained('idiomas')->onDelete('restrict');
 
             $table->string('nombres', 100);
             $table->string('apellidos', 100);

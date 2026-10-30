@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('comentarios_foro', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('publicacion_id')->constrained('publicaciones_foro');
-            $table->foreignId('autor_id')->constrained('usuarios');
+            $table->foreignId('publicacion_id')->constrained('publicaciones_foro')->onDelete('cascade');
+            $table->foreignId('autor_id')->constrained('usuarios')->onDelete('restrict');
 
             $table->text('contenido');
             $table->timestamp('creado_en');

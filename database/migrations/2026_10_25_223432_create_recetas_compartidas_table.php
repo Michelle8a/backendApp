@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('recetas_compartidas', function (Blueprint $table) {
 
             $table->foreignId('receta_id')->constrained('recetas');
-            $table->foreignId('farmacia_id')->constrained('farmacias');
+            $table->foreignId('farmacia_id')->constrained('farmacias')->onDelete('restrict');
 
             $table->primary(['receta_id', 'farmacia_id']);
 

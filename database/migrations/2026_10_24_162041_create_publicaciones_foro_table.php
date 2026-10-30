@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('publicaciones_foro', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('autor_id')->constrained('usuarios');
-            $table->foreignId('categoria_id')->constrained('categorias_foro');
+            $table->foreignId('autor_id')->constrained('usuarios')->onDelete('restrict');
+            $table->foreignId('categoria_id')->constrained('categorias_foro')->onDelete('restrict');
 
             $table->string('titulo', 200);
             $table->text('contenido');

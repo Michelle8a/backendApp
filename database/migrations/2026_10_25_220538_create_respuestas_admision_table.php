@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('respuestas_admision', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('sesion_id')->constrained('sesiones_admision');
+            $table->foreignId('sesion_id')->constrained('sesiones_admision')->onDelete('restrict');
 
             $table->string('clave', 50);
             $table->string('pregunta');

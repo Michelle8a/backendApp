@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('citas', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('cascade');
-            $table->foreignId('medico_id')->constrained('medicos')->onDelete('cascade');
+            $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('restrict');
+            $table->foreignId('medico_id')->constrained('medicos')->onDelete('restrict');
+
             $table->datetime('fecha_hora');
             $table->integer('duracion_min');
             $table->enum('tipo', ['general','especialista']);
@@ -23,6 +24,7 @@ return new class extends Migration
             $table->string('motivo');
             $table->string('sala_video');
             $table->text('notas_medico_cifradas');
+            
             $table->timestamps();
         });
     }

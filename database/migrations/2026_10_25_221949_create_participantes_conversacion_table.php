@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('participantes_conversacion', function (Blueprint $table) {
             
-            $table->foreignId('conversacion_id')->constrained('conversaciones');
-            $table->foreignId('usuario_id')->constrained('usuarios');
+            $table->foreignId('conversacion_id')->constrained('conversaciones')->onDelete('cascade');
+            $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('restrict');
 
             $table->primary(['conversacion_id', 'usuario_id']);
 
