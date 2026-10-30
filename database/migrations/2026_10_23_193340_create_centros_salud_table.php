@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('latitud', 10, 7);
             $table->decimal('longitud', 10, 7);
             $table->string('telefono', 20);
-            $table->timestamps();
+            //$table->timestamps();
         });
     }
 

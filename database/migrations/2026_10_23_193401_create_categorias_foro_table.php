@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('categorias_foro', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 100)->unique();
-            $table->timestamps();
+            //$table->timestamps();
         });
     }
 

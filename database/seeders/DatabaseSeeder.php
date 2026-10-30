@@ -20,7 +20,9 @@ class DatabaseSeeder extends Seeder
 
             IdiomaSeeder::class,
             AlergiaSeeder::class,
-            EnfermedadSeeder::class
+            EnfermedadSeeder::class,
+            EspecialidadSeeder::class,
+            Centro_SaludSeeder::class
         ]);
     }
 }

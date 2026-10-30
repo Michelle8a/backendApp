@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('longitud', 10, 7)->nullable();
             $table->string('telefono', 20)->nullable();
             $table->string('correo', 150)->nullable();
-            $table->timestamps();
+            //$table->timestamps();
         });
     }
 
