@@ -8,6 +8,6 @@ use App\Models\Especialidad;
 class EspecialidadController extends Controller
 {
     public function index(){
-        return response()->json(Idioma::all(), 200);
+        return response()->json(Especialidad::all(), 200);
     }
 }

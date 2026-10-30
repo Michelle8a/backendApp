@@ -22,7 +22,9 @@ class DatabaseSeeder extends Seeder
             AlergiaSeeder::class,
             EnfermedadSeeder::class,
             EspecialidadSeeder::class,
-            Centro_SaludSeeder::class
+            Centro_SaludSeeder::class,
+            FarmaciaSeeder::class,
+            Categoria_ForoSeeder::class
         ]);
     }
 }

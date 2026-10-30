@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('categorias_foro', function (Blueprint $table) {
+
             $table->id();
             $table->string('nombre', 100)->unique();
+            
             //$table->timestamps();
         });
     }

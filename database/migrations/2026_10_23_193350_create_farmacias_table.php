@@ -12,13 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('farmacias', function (Blueprint $table) {
+            
             $table->id();
             $table->string('nombre', 150);
             $table->string('direccion');
-            $table->decimal('latitud', 10, 7)->nullable();
-            $table->decimal('longitud', 10, 7)->nullable();
-            $table->string('telefono', 20)->nullable();
-            $table->string('correo', 150)->nullable();
+            $table->decimal('latitud', 10, 7);
+            $table->decimal('longitud', 10, 7);
+            $table->string('telefono', 20);
+            $table->string('correo', 150);
+            
             //$table->timestamps();
         });
     }
