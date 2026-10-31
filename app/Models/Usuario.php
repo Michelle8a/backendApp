@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
-class Usuario extends Authenticatable
+class Usuario extends Authenticatable implements JWTSubject
 {
     use HasApiTokens;
 
@@ -30,6 +30,33 @@ class Usuario extends Authenticatable
         return $this->contrasena_hash;
     }
 
+
+    //-----------JWT--------------------
+    
+    //el "sub" del token: identifica el usuario (su id)
+    public function getJWTIdentifier()
+    {
+        return $this->getkey();
+    }
+
+    /**
+     * claims propios que se guardan dentro del token.
+     * OJO: el token va firmado pero NO cifrado, cualquiera puede leerlo
+     * Por eso va el rol, nunca datos sensibles.
+     */
+
+    public function getJWTCustomClaims()
+    {
+        return [
+            'rol' => $this->rol,
+        ];
+    }
+
+    // HELPER DEL ROL
+    public function tieneRol(string ...$roles): bool
+    {
+        return in_array($this->rol, $roles, true);
+    }
     //-----------RELACIONES-------------
 
     public function paciente()
