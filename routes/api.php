@@ -35,6 +35,25 @@ Route::middleware(['auth:api', 'rol:admin'])->group(function (){
     Route::apiResource('/usuarios', UsuarioController::class);
 });
 
+//------------PACIENTES--------------------
+//el paciente consulta su propio perfil
+Route::middleware(['auth:api', 'rol:paciente'])->get('/mi-paciente', [PacienteController::class, 'miPerfil']);
+
+//listar: solo admin y medico
+Route::middleware(['auth:api', 'rol:admin,medico'])->get('/pacientes', [PacienteController::class, 'index']);
+
+//crear y actualizar: paciente(el suyo) y admin
+Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
+    Route::post('/pacientes', [PacienteController::class, 'store']);
+    Route::put('/pacientes/{paciente}', [PacienteController::class, 'update']);
+});
+
+//ver uno: los tres roles (el controller se encarga de revisar que sea suyo si el rol es paciente)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->get('/pacientes/{paciente}', [PacienteController::class, 'show']);
+
+//eliminar: solo el admin
+Route::middleware(['auth:api', 'rol:admin'])->delete('/paciente/{paciente}', [PacienteController::class, 'destroy']);
+
 
 //------------SOLO GET--------------------
 
@@ -52,4 +71,4 @@ Route::get('/categorias_foro', [CategoriaForoController::class, 'index']);
 
 //Route::apiResource('/usuarios', UsuarioController::class); //cambiar despues
 
-Route::apiResource('/pacientes', PacienteController::class);
+//Route::apiResource('/pacientes', PacienteController::class);
