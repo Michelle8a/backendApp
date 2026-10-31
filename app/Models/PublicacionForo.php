@@ -22,10 +22,10 @@ class PublicacionForo extends Model
     //-------------RELACIONES-----------
 
     public function usuario(){
-        return $this->belongsTo(Usuario::class);
+        return $this->belongsTo(Usuario::class, 'autor_id');
     }
 
     public function categoria_foro(){
-        return $this->belongsTo(Usuario::class);
+        return $this->belongsTo(CategoriaForo::class, 'categoria_id');
     }
 }

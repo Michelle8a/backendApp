@@ -81,6 +81,10 @@ class Usuario extends Authenticatable implements JWTSubject
     }
 
     public function bitacora_auditoria(){
-        return $this->hasMany(Usuario::class);
+        return $this->hasMany(BitacoraAuditoria::class);
+    }
+
+    public function publicaciones_foro(){
+        return $this->hasMany(PublicacionForo::class);
     }
 }
