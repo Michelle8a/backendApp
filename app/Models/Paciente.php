@@ -33,6 +33,20 @@ class Paciente extends Model
         return $this->belongsTo(Idioma::class);
     }
 
+    public function contactos_emergencia(){
+        return $this->hasMany(ContactoEmergencia::class);
+    }
 
+    public function alergias(){ //Tabla compuesta Paciente - Alergia
+        return $this->belongsToMany(Alergia::class, 'paciente_alergia', 'paciente_id', 'alergia_id')
+                ->withPivot('gravedad')
+                ->withTimestamps();
+    }
+
+    public function enfermedades(){ //Tabla Paciente - Enfermedad
+        return $this->belongsToMany(Enfermedad::class, 'paciente_enfermedad', 'paciente_id', 'enfermedad_id')
+                    ->withPivot('desde', 'es_cronica')
+                    ->withTimestamps();
+    }
     
 }

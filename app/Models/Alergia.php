@@ -13,4 +13,13 @@ class Alergia extends Model
     ];
 
     public $timestamps = false;
+
+
+    //------RELACIONES---------
+
+    public function pacientes(){ //Tabla compuesta Paciente - Alergia
+        return $this->belongsToMany(Paciente::class, 'paciente_alergia', 'alergia_id', 'paciente_id')
+                    ->withPivot('gravedad')
+                    ->withTimestamps();
+    }
 }
