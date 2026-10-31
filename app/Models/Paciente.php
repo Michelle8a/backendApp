@@ -48,5 +48,9 @@ class Paciente extends Model
                     ->withPivot('desde', 'es_cronica')
                     ->withTimestamps();
     }
+
+    public function signosVitales(){
+        return $this->hasMany(SignoVital::class);
+    }
     
 }
