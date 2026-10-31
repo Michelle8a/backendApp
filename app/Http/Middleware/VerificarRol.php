@@ -3,7 +3,8 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Component\HttpFundation\Response;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 //USO EN RUTAS: ->middleware(['auth:api', 'rol:admin,medico'])
 class VerificarRol
