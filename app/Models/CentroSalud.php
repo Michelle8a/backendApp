@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Centro_Salud extends Model
+class CentroSalud extends Model
 {
     protected $table = 'centros_salud';
 
@@ -18,4 +18,11 @@ class Centro_Salud extends Model
     ];
 
     public $timestamps = false;
+
+
+    //-----RELACIONES------
+    
+    public function medicos(){
+        return $this->hasMany(Medico::class);
+    }
 }

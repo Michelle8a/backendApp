@@ -23,6 +23,8 @@ class Paciente extends Model
         'longitud'
     ];
 
+    //---------RELACIONES----------
+
     public function usuario(){
         return $this->belongsTo(Usuario::class);
     }
@@ -30,5 +32,7 @@ class Paciente extends Model
     public function idioma(){
         return $this->belongsTo(Idioma::class);
     }
+
+
     
 }

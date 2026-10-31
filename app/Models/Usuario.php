@@ -58,15 +58,25 @@ class Usuario extends Authenticatable implements JWTSubject
     {
         return in_array($this->rol, $roles, true);
     }
+    
+    
+    
+    
     //-----------RELACIONES-------------
 
-    public function paciente()
-    {
+    public function paciente(){
         return $this->hasOne(Paciente::class);
     }
 
-    public function medico()
-    {
+    public function medico(){
         return $this->hasOne(Medico::class);
+    }
+
+    public function tokens_dispositivo(){
+        return $this->hasMany(TokenDispositivo::class);
+    }
+
+    public function notificaciones(){
+        return $this->hasMany(Notificacion::class);
     }
 }

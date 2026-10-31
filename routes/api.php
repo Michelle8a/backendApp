@@ -10,9 +10,9 @@ use App\Http\Controllers\IdiomaController;
 use App\Http\Controllers\AlergiaController;
 use App\Http\Controllers\EnfermedadController;
 use App\Http\Controllers\EspecialidadController;
-use App\Http\Controllers\Centro_SaludController;
+use App\Http\Controllers\CentroSaludController;
 use App\Http\Controllers\FarmaciaController;
-use App\Http\Controllers\Categoria_ForoController;
+use App\Http\Controllers\CategoriaForoController;
 
 use App\Http\Controllers\PacienteController;
 
@@ -35,23 +35,16 @@ Route::middleware(['auth:api', 'rol:admin'])->group(function (){
     Route::apiResource('/usuarios', UsuarioController::class);
 });
 
+
 //------------SOLO GET--------------------
 
 Route::get('/idiomas', [IdiomaController::class, 'index']);
-
 Route::get('/alergias', [AlergiaController::class, 'index']);
-
 Route::get('/enfermedades', [EnfermedadController::class, 'index']);
-
 Route::get('/especialidades', [EspecialidadController::class, 'index']);
-
-Route::get('/centros_salud', [Centro_SaludController::class, 'index']);
-
+Route::get('/centros_salud', [CentroSaludController::class, 'index']);
 Route::get('/farmacias', [FarmaciaController::class, 'index']);
-
-Route::get('/categorias_foro', [Categoria_ForoController::class, 'index']);
-
-
+Route::get('/categorias_foro', [CategoriaForoController::class, 'index']);
 
 
 

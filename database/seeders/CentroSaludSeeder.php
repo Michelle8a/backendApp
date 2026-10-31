@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Centro_Salud;
+use App\Models\CentroSalud;
 
-class Centro_SaludSeeder extends Seeder
+class CentroSaludSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -41,7 +41,7 @@ class Centro_SaludSeeder extends Seeder
         ];
 
         foreach ($centros as $centro) {
-            Centro_Salud::firstOrCreate(
+            CentroSalud::firstOrCreate(
                 ['nombre' => $centro['nombre']], 
                 $centro                          
             );

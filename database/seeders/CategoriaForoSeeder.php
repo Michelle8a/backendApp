@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Categoria_Foro;
+use App\Models\CategoriaForo;
 
-class Categoria_ForoSeeder extends Seeder
+class CategoriaForoSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -22,7 +22,7 @@ class Categoria_ForoSeeder extends Seeder
         ];
 
         foreach ($categorias as $nombre) {
-            Categoria_Foro::firstOrCreate(['nombre' => $nombre]);
+            CategoriaForo::firstOrCreate(['nombre' => $nombre]);
         }
     }
 }
