@@ -79,4 +79,8 @@ class Usuario extends Authenticatable implements JWTSubject
     public function notificaciones(){
         return $this->hasMany(Notificacion::class);
     }
+
+    public function bitacora_auditoria(){
+        return $this->hasMany(Usuario::class);
+    }
 }
