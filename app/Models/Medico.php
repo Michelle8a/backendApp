@@ -31,4 +31,20 @@ class Medico extends Model
     public function centro_salud(){
         return $this->belongsTo(CentroSalud::class);
     }
+
+    public function especialidades(){
+        return $this->belongsToMany(Especialidad::class, 'medico_especialidad', 'medico_id', 'especialidad_id')->withTimestamps();
+    }
+
+    public function idiomas(){
+        return $this->belongsToMany(Idioma::class, 'medico_idioma', 'medico_id', 'idioma_id')->withTimestamps();
+    }
+
+    public function horarios(){
+        return $this->hasMany(HorarioMedico::class);
+    }
+
+    public function citas(){
+        return $this->hasMany(Citas::class, 'medico_id');
+    }
 }

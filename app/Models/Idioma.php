@@ -22,4 +22,8 @@ class Idioma extends Model
     public function pacientes(){
         return $this->hasMany(Paciente::class); //uno a muchos
     }
+
+    public function medicos(){
+        return $this->belongsToMany(Medico::class, 'medico_idioma', 'idioma_id', 'medico_id')->withTimestamps();
+    }
 }

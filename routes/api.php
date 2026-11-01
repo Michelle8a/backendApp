@@ -29,11 +29,14 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout',[AuthController::class, 'logout']);
 });
 
+
 //------------SOLO ADMIN--------------------
 // USUARIOS (antes era publico, cualquiera podia crear admins o borrar usuarios)
 Route::middleware(['auth:api', 'rol:admin'])->group(function (){
     Route::apiResource('/usuarios', UsuarioController::class);
 });
+
+
 
 //------------PACIENTES--------------------
 //el paciente consulta su propio perfil
@@ -55,6 +58,7 @@ Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->get('/pacientes/{p
 Route::middleware(['auth:api', 'rol:admin'])->delete('/paciente/{paciente}', [PacienteController::class, 'destroy']);
 
 
+
 //------------SOLO GET--------------------
 
 Route::get('/idiomas', [IdiomaController::class, 'index']);
@@ -66,9 +70,3 @@ Route::get('/farmacias', [FarmaciaController::class, 'index']);
 Route::get('/categorias_foro', [CategoriaForoController::class, 'index']);
 
 
-
-//----------------CRUD-----------------------
-
-//Route::apiResource('/usuarios', UsuarioController::class); //cambiar despues
-
-//Route::apiResource('/pacientes', PacienteController::class);

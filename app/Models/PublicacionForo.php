@@ -28,4 +28,12 @@ class PublicacionForo extends Model
     public function categoria_foro(){
         return $this->belongsTo(CategoriaForo::class, 'categoria_id');
     }
+
+    public function comentarios(){
+        return $this->hasMany(ComentariosForo::class, 'publicacion_id');
+    }
+
+    public function me_gusta(){
+        return $this->belongsToMany(Usuario::class, 'me_gusta_foro', 'publicacion_id', 'autor_id')->withTimestamps();
+    }
 }

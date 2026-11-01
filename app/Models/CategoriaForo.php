@@ -14,4 +14,10 @@ class CategoriaForo extends Model
     ];
 
     public $timestamps = false;
+
+    //-------------RELACIONES-----------
+
+    public function publicaciones(){
+        return $this->hasMany(PublicacionForo::class, 'categoria_id');
+    }
 }

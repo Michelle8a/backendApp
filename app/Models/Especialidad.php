@@ -14,4 +14,12 @@ class Especialidad extends Model
     ];
 
     public $timestamps = false;
+
+
+
+    //-----RELACIONES-----
+
+    public function medicos(){
+        return $this->belongsToMany(Medico::class, 'medico_especialidad', 'especialidad_id', 'medico_id')->withTimestamps();
+    }
 }

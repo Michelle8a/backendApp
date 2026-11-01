@@ -52,5 +52,13 @@ class Paciente extends Model
     public function signosVitales(){
         return $this->hasMany(SignoVital::class);
     }
+
+    public function resultadosLaboratorio(){
+        return $this->hasMany(ResultadoLaboratorio::class, 'id_paciente');
+    }
+
+    public function citas(){
+        return $this->hasMany(Citas::class, 'paciente_id');
+    }
     
 }
