@@ -95,4 +95,17 @@ class Usuario extends Authenticatable implements JWTSubject
     public function me_gusta_foro(){
         return $this->belongsToMany(PublicacionForo::class, 'me_gusta_foro', 'autor_id', 'publicacion_id')->withTimestamps();
     }
+
+    public function conversaciones(){
+        return $this->belongsToMany(Conversacion::class, 'participantes_conversacion', 'usuario_id', 'conversacion_id')
+                    ->withTimestamps();
+    }
+
+    public function mensajes_enviados(){
+        return $this->hasMany(Mensaje::class, 'emisor_id');
+    }
+
+    public function historial_medico_creado(){
+        return $this->hasMany(HistorialMedico::class, 'creado_por');
+    }
 }

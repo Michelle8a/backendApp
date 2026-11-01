@@ -47,4 +47,8 @@ class Medico extends Model
     public function citas(){
         return $this->hasMany(Citas::class, 'medico_id');
     }
+
+    public function recetas(){
+        return $this->hasMany(Receta::class, 'medico_id');
+    }
 }

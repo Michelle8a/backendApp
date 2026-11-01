@@ -60,5 +60,20 @@ class Paciente extends Model
     public function citas(){
         return $this->hasMany(Citas::class, 'paciente_id');
     }
-    
+
+    public function sesionesAdmision(){
+        return $this->hasMany(SesionAdmision::class, 'paciente_id');
+    }
+
+    public function recetas(){
+        return $this->hasMany(Receta::class, 'paciente_id');
+    }
+
+    public function historialMedico(){
+        return $this->hasMany(HistorialMedico::class, 'paciente_id');
+    }
+
+    public function archivosAdjuntos(){
+        return $this->hasMany(ArchivosAdjuntos::class, 'paciente_id');
+    }
 }

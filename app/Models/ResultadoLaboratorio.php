@@ -22,4 +22,9 @@ class ResultadoLaboratorio extends Model
     {
         return $this->belongsTo(Paciente::class, 'id_paciente');
     }
+
+    public function valoresResultado()
+    {
+        return $this->hasMany(ValorResultado::class, 'resultado_id');
+    }
 }

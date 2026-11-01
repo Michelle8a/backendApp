@@ -20,13 +20,31 @@ class Citas extends Model
         'notas_medico_cifradas'
     ];
 
-    public function paciente()
-    {
-        return $this->belongsTo(Pacientes::class, 'paciente_id');
+
+
+    //-------RELACIONES-----------
+
+    public function paciente(){
+        return $this->belongsTo(Paciente::class, 'paciente_id');
     }
 
-    public function medico()
-    {
-        return $this->belongsTo(Medicos::class, 'medico_id');
+    public function medico(){
+        return $this->belongsTo(Medico::class, 'medico_id');
+    }
+
+    public function sesion_admision(){
+        return $this->hasOne(SesionAdmision::class, 'cita_id');
+    }
+
+    public function conversacion(){
+        return $this->hasOne(Conversacion::class, 'cita_id');
+    }
+
+    public function receta(){
+        return $this->hasOne(Receta::class, 'cita_id');
+    }
+
+    public function historial_medico(){
+        return $this->hasMany(HistorialMedico::class, 'cita_id');
     }
 }
