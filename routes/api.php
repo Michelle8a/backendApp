@@ -13,8 +13,8 @@ use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\CentroSaludController;
 use App\Http\Controllers\FarmaciaController;
 use App\Http\Controllers\CategoriaForoController;
-
 use App\Http\Controllers\PacienteController;
+use App\Http\Controllers\MedicoController;
 
 
 //------------AUTENTICACION (JWT)--------------------
@@ -58,6 +58,29 @@ Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->get('/pacientes/{p
 Route::middleware(['auth:api', 'rol:admin'])->delete('/paciente/{paciente}', [PacienteController::class, 'destroy']);
 
 
+
+//------------MEDICOS--------------------
+
+//EL MEDICO PUEDE CONSULTAR SU PROPIO PERFIL
+Route::middleware(['auth:api', 'rol:medico'])->get('mi-medico', [MedicoController::class, 'miPerfil']);
+
+//buscar y ver: cualquier usuario son sesion (el controler oculta los no verificados)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
+    Route::get('/medicos', [MedicoController::class, 'idex']);
+    Route::get('/medicos/{medico}', [MedicoController::class, 'show']);
+});
+
+//crear y actualizar: medico (el suyo) y admin (cualquiera)
+Route::middleware(['auth:api', 'rol:medico,admin'])->group(function () {
+    Route::post('/medicos', [MedicoController::class, 'store']);
+    Route::put('/medicos/{medico}', [MedicoController::class, 'update']);
+});
+
+//verificar y eliminar: solo el admin
+Route::middleware(['auth:api', 'rol:admin'])->group(function () {
+    Route::patch('/medicos/{medico}/verificar', [MedicoController::class, 'verificar']);
+    Route::delete('/medicos/{medico}', [MedicoController::class, 'destroy']);
+});
 
 //------------SOLO GET--------------------
 
