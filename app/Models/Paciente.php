@@ -50,7 +50,7 @@ class Paciente extends Model
     }
 
     public function signosVitales(){
-        return $this->hasMany(SignoVital::class);
+        return $this->hasMany(SignosVitales::class);
     }
 
     public function resultadosLaboratorio(){

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Receta;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use App\Models\BitacoraAuditoria;
 
 class RecetaController extends Controller
 {
@@ -18,9 +20,9 @@ class RecetaController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, Receta $receta)
     {
-        //
+        BitacoraAuditoria::registrar('crear', 'receta', $receta->id);
     }
 
     /**
@@ -37,6 +39,7 @@ class RecetaController extends Controller
     public function update(Request $request, Receta $receta)
     {
         //
+        BitacoraAuditoria::registrar('actualizar', 'receta', $receta->id);
     }
 
     /**
@@ -44,6 +47,6 @@ class RecetaController extends Controller
      */
     public function destroy(Receta $receta)
     {
-        //
+        BitacoraAuditoria::registrar('eliminar', 'receta', $receta->id);
     }
 }

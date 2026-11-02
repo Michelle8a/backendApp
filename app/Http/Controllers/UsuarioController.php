@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
+use App\Models\BitacoraAuditoria;
+
 class UsuarioController extends Controller
 {
     //GET todos
@@ -37,6 +39,8 @@ class UsuarioController extends Controller
         //inserta la fila
         $usuario = Usuario::create($datos);
         $usuario->refresh(); //vuelve a leer la fila
+
+        BitacoraAuditoria::registrar('crear', 'usuario', $usuario->id); 
 
         return response()->json($usuario, 201);
     }
@@ -73,6 +77,8 @@ class UsuarioController extends Controller
         //modifica la fila
         $usuario->update($datos);
 
+        BitacoraAuditoria::registrar('actualizar', 'usuario', $usuario->id); 
+
         return response()->json($usuario, 200);
     }
 
@@ -80,6 +86,8 @@ class UsuarioController extends Controller
     public function destroy(Usuario $usuario)
     {
         $usuario->delete();
+
+        BitacoraAuditoria::registrar('eliminar', 'usuario', $usuario->id);
 
         return response()->json(null, 204);
     }

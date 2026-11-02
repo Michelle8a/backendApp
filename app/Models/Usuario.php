@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Usuario extends Authenticatable implements JWTSubject
 {
@@ -72,8 +73,8 @@ class Usuario extends Authenticatable implements JWTSubject
         return $this->hasOne(Medico::class);
     }
 
-    public function tokens_dispositivo(){
-        return $this->hasMany(TokenDispositivo::class);
+    public function tokens_dispositivo(): HasMany{
+        return $this->hasMany(TokenDispositivo::class, 'usuario_id');
     }
 
     public function notificaciones(){
@@ -85,7 +86,7 @@ class Usuario extends Authenticatable implements JWTSubject
     }
 
     public function publicaciones_foro(){
-        return $this->hasMany(PublicacionForo::class);
+        return $this->hasMany(PublicacionForo::class, 'autor_id');
     }
 
     public function comentarios_foro(){

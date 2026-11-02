@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Medico;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Models\BitacoraAuditoria;
 
 class MedicoController extends Controller
 {
@@ -103,6 +104,8 @@ class MedicoController extends Controller
         $medico = new Medico();
         $medico->forceFill($datos)->save();
 
+        BitacoraAuditoria::registrar('crear', 'medico', $medico->id);
+
         return response()->json($this->formatear($medico, true), 201);
     }
 
@@ -148,7 +151,9 @@ class MedicoController extends Controller
 
         $medico->forceFill($datos)->save();
 
-        return response()->json(this->formatear($medico, true), 200);
+        BitacoraAuditoria::registrar('actualizar', 'medico', $medico->id);
+
+        return response()->json($this->formatear($medico, true), 200);
     }
 
     //PATCH: para verificar o quitar la verificacion (Solo admin, lo exige la ruta)
@@ -171,6 +176,7 @@ class MedicoController extends Controller
         }
 
         $medico->delete();
+        BitacoraAuditoria::registrar('eliminar', 'medico', $medico->id);
 
         return response()->json(null, 204);
     }

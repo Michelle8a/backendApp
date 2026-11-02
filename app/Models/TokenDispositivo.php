@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TokenDispositivo extends Model
 {
@@ -18,7 +19,8 @@ class TokenDispositivo extends Model
 
     //-----RELACIONES-----
 
-    public function usuario(){
-        return $this->belongsTo(Usuario::class);
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 }

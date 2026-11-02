@@ -16,7 +16,7 @@ return new class extends Migration
 
             $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
 
-            $table->string('token_fcm', 255);
+            $table->string('token_fcm', 255)->unique();
             $table->enum('plataforma', ['android', 'ios'])->default('android');
             $table->timestamps();
         });

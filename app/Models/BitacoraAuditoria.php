@@ -8,19 +8,50 @@ class BitacoraAuditoria extends Model
 {
     protected $table = 'bitacora_auditoria';
 
-    protected $fillable = [
+    // La tabla usa su propia columna "fecha"; no lleva created_at / updated_at.
+    public $timestamps = false;
 
+    protected $fillable = [
         'usuario_id',
         'accion',
         'recurso',
         'recurso_id',
         'ip',
-        'fecha'
+        'fecha',
     ];
 
+    protected $casts = [
+        'fecha' => 'datetime',
+    ];
 
     //-------------RELACION-----------
-    public function usuario(){
+    public function usuario()
+    {
         return $this->belongsTo(Usuario::class);
+    }
+
+    //-------------AYUDANTE PARA REGISTRAR-----------
+    /**
+     * Anota una acción en la bitácora. Se llama desde los controladores:
+     *
+     *   BitacoraAuditoria::registrar('crear', 'usuario', $usuario->id);
+     *
+     * Si no se pasa $usuarioId, se toma el usuario del token JWT.
+     * La IP sale de la petición actual, nunca del cliente.
+     */
+    public static function registrar(
+        string $accion,
+        string $recurso,
+        ?int $recursoId = null,
+        ?int $usuarioId = null
+    ): self {
+        return static::create([
+            'usuario_id' => $usuarioId ?? auth('api')->id(),
+            'accion'     => $accion,
+            'recurso'    => $recurso,
+            'recurso_id' => $recursoId,
+            'ip'         => request()->ip(),
+            'fecha'      => now(),
+        ]);
     }
 }

@@ -18,6 +18,12 @@ class Notificacion extends Model
         'enviada_en'
     ];
 
+    protected $casts = [
+        'leida'           => 'boolean',
+        'programada_para' => 'datetime',
+        'enviada_en'      => 'datetime',
+    ];
+
 
     //----------
 

@@ -6,6 +6,7 @@ use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\BitacoraAuditoria;
 
 
 class AuthController extends Controller
@@ -32,6 +33,8 @@ class AuthController extends Controller
             'consentimiento_version' => $datos['consentimiento_version'],
         ]);
 
+        BitacoraAuditoria::registrar('registro', 'usuario', $usuario->id, $usuario->id);
+
         $token = Auth::guard('api')->login($usuario);
 
         return $this->respuestaToken($token, $usuario, 201);
@@ -56,6 +59,8 @@ class AuthController extends Controller
             return response()->json(['mensaje' => 'Credenciales incorrectas'], 401);
         }
 
+        BitacoraAuditoria::registrar('login', 'usuario', Auth::guard('api')->id());
+
         return $this->respuestaToken($token, Auth::guard('api')->user());
     }
 
@@ -78,6 +83,8 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::guard('api')->logout();
+
+        BitacoraAuditoria::registrar('logout', 'usuario', Auth::guard('api')->id());
 
         return response()->json(['mensaje' => 'Sesion cerrada'], 200);
     }

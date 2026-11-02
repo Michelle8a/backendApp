@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\HistorialMedico;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use App\Models\BitacoraAuditoria;
 
 class HistorialMedicoController extends Controller
 {
@@ -18,9 +20,9 @@ class HistorialMedicoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, HistorialMedico $historialMedico)
     {
-        //
+        BitacoraAuditoria::registrar('crear', 'historial_medico', $historialMedico->id);
     }
 
     /**
@@ -37,6 +39,7 @@ class HistorialMedicoController extends Controller
     public function update(Request $request, HistorialMedico $historialMedico)
     {
         //
+        BitacoraAuditoria::registrar('actualizar', 'historial_medico', $historialMedico->id);
     }
 
     /**
@@ -45,5 +48,6 @@ class HistorialMedicoController extends Controller
     public function destroy(HistorialMedico $historialMedico)
     {
         //
+        BitacoraAuditoria::registrar('eliminar', 'historial_medico', $historialMedico->id);
     }
 }

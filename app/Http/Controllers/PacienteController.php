@@ -6,6 +6,7 @@ use App\Models\Paciente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
+use App\Models\BitacoraAuditoria;
 
 
 class PacienteController extends Controller
@@ -78,6 +79,7 @@ class PacienteController extends Controller
          unset($datos['dui']);
 
          $paciente = Paciente::create($datos);
+         BitacoraAuditoria::registrar('crear', 'paciente', $paciente->id);
 
          return response()->json($this->formatear($paciente, true), 201);
     }
@@ -118,6 +120,8 @@ class PacienteController extends Controller
 
         $paciente->update($datos);
 
+        BitacoraAuditoria::registrar('actualizar', 'paciente', $paciente->id);
+
         return response()->json($this->formatear($paciente, true), 200);
     }
 
@@ -129,6 +133,7 @@ class PacienteController extends Controller
         }
 
         $paciente->delete();
+        BitacoraAuditoria::registrar('eliminar', 'paciente', $paciente->id);
 
         return response()->json(null, 204);
     }
