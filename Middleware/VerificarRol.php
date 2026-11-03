@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+//Uso en rutas:  ->middleware(['auth:api', 'rol:admin,medico'])
+class VerificarRol
+{
+    public function handle(Request $request, Closure $next, string ...$roles): Response
+    {
+        $usuario = $request->user();
+
+        //por si se olvida poner auth:api antes
+        if (! $usuario) {
+            return response()->json(['mensaje' => 'No autenticado'], 401);
+        }
+
+        //se compara con el rol de la BD (no con el claim), asi un cambio de rol
+        //o una cuenta degradada surte efecto aunque el token siga vigente
+        if (! in_array($usuario->rol, $roles, true)) {
+            return response()->json([
+                'mensaje' => 'No tienes permiso para realizar esta accion',
+            ], 403);
+        }
+
+        return $next($request);
+    }
+}
