@@ -109,4 +109,8 @@ class Usuario extends Authenticatable implements JWTSubject
     public function historial_medico_creado(){
         return $this->hasMany(HistorialMedico::class, 'creado_por');
     }
+
+    public function codigos_verificacion(){
+        return $this->hasMany(Codigo_Verificacion::class, 'usuario_id');
+    }
 }

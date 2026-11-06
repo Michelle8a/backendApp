@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('contrasena_hash');
             $table->enum('rol', ['admin', 'paciente', 'medico'])->default('paciente');
             $table->string('telefono', 20);
+            $table->string('correo_verificado_en')->nullable();
             $table->boolean('consentimiento_aceptado');
             $table->dateTime('consentimiento_fecha');
             $table->string('consentimiento_version', 10);
