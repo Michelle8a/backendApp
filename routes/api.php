@@ -20,6 +20,7 @@ use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\BitacoraAuditoriaController;
 use App\Http\Controllers\PublicacionForoController;
 use App\Http\Controllers\ContactoEmergenciaController;
+use App\Http\Controllers\ResultadoLaboratorioController;
 
 
 //------------AUTENTICACION (JWT)--------------------
@@ -158,3 +159,21 @@ Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
     Route::put('/contactos_emergencia/{contacto}', [ContactoEmergenciaController::class, 'update']);
     Route::delete('/contactos_emergencia/{contacto}', [ContactoEmergenciaController::class, 'destroy']);
 });
+
+//------------RESULTADOS DE LABORATORIO--------------------
+//ver, listar y descargar: los tres roles (el controller revisa que el paciente solo vea lo suyo)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
+    Route::get('/pacientes/{paciente}/resultados_laboratorio', [ResultadoLaboratorioController::class, 'index']);
+    Route::get('/resultados_laboratorio/{resultado}', [ResultadoLaboratorioController::class, 'show']);
+    Route::get('/resultados_laboratorio/{resultado}/archivo', [ResultadoLaboratorioController::class, 'archivo']);
+});
+
+//crear y actualizar: paciente (los suyos), medico y admin
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
+    Route::post('/pacientes/{paciente}/resultados_laboratorio', [ResultadoLaboratorioController::class, 'store']);
+    Route::put('/resultados_laboratorio/{resultado}', [ResultadoLaboratorioController::class, 'update']);
+});
+
+//eliminar: paciente (los suyos) y admin
+Route::middleware(['auth:api', 'rol:paciente,admin'])
+    ->delete('/resultados_laboratorio/{resultado}', [ResultadoLaboratorioController::class, 'destroy']);
