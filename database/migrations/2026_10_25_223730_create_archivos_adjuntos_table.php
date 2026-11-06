@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('restrict');
-            $table->foreignId('historial_id')->constrained('historial_medico')->nullable();
-            $table->foreignId('sesion_id')->constrained('sesiones_admision')->nullable();
+            $table->foreignId('historial_id')->nullable()->constrained('historial_medico');
+            $table->foreignId('sesion_id')->nullable()->constrained('sesiones_admision');
 
             $table->string('url');
             $table->enum('tipo', ['imagen', 'video', 'pdf']);

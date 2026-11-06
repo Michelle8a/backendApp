@@ -36,6 +36,6 @@ class SesionAdmision extends Model
     }
 
     public function archivos_adjuntos(){
-        return $this->hasMany(ArchivosAdjuntos::class, 'sesion_admision_id');
+        return $this->hasMany(ArchivosAdjuntos::class, 'sesion_id');
     }
 }

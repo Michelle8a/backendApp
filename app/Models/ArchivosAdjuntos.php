@@ -11,11 +11,15 @@ class ArchivosAdjuntos extends Model
     protected $fillable = [
 
         'paciente_id',
-        'historial_medico_id',
-        'sesion_admision_id',
+        'historial_id',
+        'sesion_id',
         'url',
         'tipo',
         'subido_en'
+    ];
+
+    protected $casts = [
+        'subido_en' => 'datetime',
     ];
 
     //---------RELACIONES----------

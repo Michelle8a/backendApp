@@ -15,12 +15,12 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('paciente_id')->constrained('pacientes')->onDelete('restrict');
-            $table->foreignId('cita_id')->constrained('citas')->nullable();
-            $table->foreignId('receta_id')->constrained('recetas')->nullable();
+            $table->foreignId('cita_id')->nullable()->constrained('citas');
+            $table->foreignId('receta_id')->nullable()->constrained('recetas');
             $table->foreignId('creado_por')->constrained('usuarios')->onDelete('restrict');
 
             $table->enum('tipo', ['consulta', 'receta', 'resultado', 'signos_vitales']);
-            $table->text('disgnostico_cifrado');
+            $table->text('diagnostico_cifrado');
             $table->datetime('fecha');
 
             $table->timestamps();

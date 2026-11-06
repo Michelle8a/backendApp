@@ -22,6 +22,8 @@ use App\Http\Controllers\PublicacionForoController;
 use App\Http\Controllers\ContactoEmergenciaController;
 use App\Http\Controllers\ResultadoLaboratorioController;
 
+use App\Http\Controllers\ArchivosAdjuntosController;
+
 
 //------------AUTENTICACION (JWT)--------------------
 //publicas
@@ -177,3 +179,19 @@ Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () 
 //eliminar: paciente (los suyos) y admin
 Route::middleware(['auth:api', 'rol:paciente,admin'])
     ->delete('/resultados_laboratorio/{resultado}', [ResultadoLaboratorioController::class, 'destroy']);
+
+
+
+//------------ARCHIVOS ADJUNTOS--------------------
+//ver y descargar: los tres roles (el controller revisa que sea suyo si es paciente)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
+    Route::get('/pacientes/{paciente}/archivos_adjuntos', [ArchivosAdjuntosController::class, 'index']);
+    Route::get('/archivos_adjuntos/{archivo}', [ArchivosAdjuntosController::class, 'show']);
+    Route::get('/archivos_adjuntos/{archivo}/descargar', [ArchivosAdjuntosController::class, 'descargar']);
+});
+
+//subir y eliminar: paciente (los suyos) y admin
+Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
+    Route::post('/pacientes/{paciente}/archivos_adjuntos', [ArchivosAdjuntosController::class, 'store']);
+    Route::delete('/archivos_adjuntos/{archivo}', [ArchivosAdjuntosController::class, 'destroy']);
+});
