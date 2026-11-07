@@ -17,6 +17,10 @@ class BanderaRoja extends Model
 
     //-------RELACIONES-----------
 
+    public function cita(){
+        return $this->belongsTo(Citas::class, 'cita_id');
+    }
+
     public function sesion_admision(){
         return $this->belongsTo(SesionAdmision::class, 'cita_id', 'cita_id');
     }

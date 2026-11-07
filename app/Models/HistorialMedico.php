@@ -9,12 +9,12 @@ class HistorialMedico extends Model
     protected $table = 'historial_medico';
 
     protected $fillable = [
-        'paciente_id',
+    'paciente_id',
         'cita_id',
         'receta_id',
         'creado_por',
         'tipo',
-        'diagnostico_cifrado',
+        'disgnostico_cifrado',
         'fecha'
     ];
 

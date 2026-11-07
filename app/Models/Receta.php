@@ -36,13 +36,13 @@ class Receta extends Model
         return $this->hasMany(DetalleReceta::class, 'receta_id');
     }
 
-    public function farmacias_compartidas(){
-        return $this->belongsToMany(Farmacia::class, 'recetas_compartidas', 'receta_id', 'farmacia_id');
-    }
 
     public function historial_medico(){
         return $this->hasMany(HistorialMedico::class, 'receta_id');
     }
 
-    
+    public function farmacias_compartidas(){
+        return $this->belongsToMany(Farmacia::class, 'recetas_compartidas', 'receta_id', 'farmacia_id')
+                    ->withTimestamps();
+    }
 }
