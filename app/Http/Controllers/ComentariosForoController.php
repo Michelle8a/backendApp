@@ -3,47 +3,148 @@
 namespace App\Http\Controllers;
 
 use App\Models\ComentariosForo;
+use App\Models\PublicacionForo;
 use Illuminate\Http\Request;
 
 class ComentariosForoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    // Relaciones que se cargan para poder armar el nombre del autor
+    private const CON = [
+        'autor:id,rol',
+        'autor.paciente:id,usuario_id,nombres',
+        'autor.medico:id,usuario_id,nombres,apellidos',
+        'publicacion:id,autor_id,anonimo',
+    ];
+
+    private function transformar(ComentariosForo $c, $usuarioActual): array
     {
-        //
+        $autor = $c->autor;
+        $pub   = $c->publicacion;
+
+        $ocultar = $pub && $pub->anonimo && $pub->autor_id === $c->autor_id;
+
+        if ($ocultar) {
+            $datosAutor = ['id' => null, 'rol' => null, 'nombre' => 'Anonimo'];
+        } else {
+            $nombre = match ($autor?->rol) {
+                'medico'   => $autor->medico
+                                ? trim("Dr(a). {$autor->medico->nombres} {$autor->medico->apellidos}")
+                                : 'Medico',
+                'paciente' => $autor->paciente->nombres ?? 'Paciente',
+                'admin'    => 'Administrador',
+                default    => 'Usuario',
+            };
+
+            $datosAutor = ['id' => $autor?->id, 'rol' => $autor?->rol, 'nombre' => $nombre];
+        }
+
+        return [
+            'id'             => $c->id,
+            'publicacion_id' => $c->publicacion_id,
+            'contenido'      => $c->contenido,
+            'creado_en'      => $c->creado_en,
+            'actualizado_en' => $c->updated_at,
+            'editado'        => $c->updated_at && $c->created_at && $c->updated_at->gt($c->created_at),
+            'es_mio'         => $c->autor_id === $usuarioActual->id, //para mostrar editar/borrar en la app
+            'autor'          => $datosAutor,
+        ];
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    // ------------------------------------------------------------------
+    // GET /foro/publicaciones/{publicacion}/comentarios
+    // Los tres roles. Orden: del mas antiguo al mas reciente.
+    // ?per_page=20
+    // ------------------------------------------------------------------
+    public function index(Request $request, PublicacionForo $publicacion)
     {
-        //
+        $request->validate(['per_page' => 'nullable|integer|min:1|max:100']);
+
+        $comentarios = ComentariosForo::with(self::CON)
+            ->where('publicacion_id', $publicacion->id)
+            ->orderBy('creado_en')
+            ->orderBy('id')
+            ->paginate($request->integer('per_page', 20));
+
+        $usuario = $request->user();
+        $comentarios->through(fn ($c) => $this->transformar($c, $usuario));
+
+        return response()->json($comentarios);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(ComentariosForo $comentariosForo)
+    // ------------------------------------------------------------------
+    // POST /foro/publicaciones/{publicacion}/comentarios
+    // Los tres roles. El autor siempre es el usuario del token.
+    // ------------------------------------------------------------------
+    public function store(Request $request, PublicacionForo $publicacion)
     {
-        //
+        $datos = $request->validate([
+            'contenido' => 'required|string|min:1|max:2000',
+        ]);
+
+        $comentario = ComentariosForo::create([
+            'publicacion_id' => $publicacion->id,
+            'autor_id'       => $request->user()->id, //nunca se recibe del body
+            'contenido'      => trim($datos['contenido']),
+            'creado_en'      => now(),
+        ]);
+
+        $comentario->load(self::CON);
+
+        return response()->json([
+            'mensaje' => 'Comentario creado correctamente',
+            'data'    => $this->transformar($comentario, $request->user()),
+        ], 201);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, ComentariosForo $comentariosForo)
+    // ------------------------------------------------------------------
+    // GET /foro/comentarios/{comentario}
+    // ------------------------------------------------------------------
+    public function show(Request $request, ComentariosForo $comentario)
     {
-        //
+        $comentario->load(self::CON);
+
+        return response()->json([
+            'data' => $this->transformar($comentario, $request->user()),
+        ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(ComentariosForo $comentariosForo)
+    // ------------------------------------------------------------------
+    // PUT /foro/comentarios/{comentario}
+    // Solo el autor del comentario (ni el admin puede editar lo que escribio otro).
+    // ------------------------------------------------------------------
+    public function update(Request $request, ComentariosForo $comentario)
     {
-        //
+        if ($comentario->autor_id !== $request->user()->id) {
+            return response()->json(['mensaje' => 'Solo el autor puede editar este comentario'], 403);
+        }
+
+        $datos = $request->validate([
+            'contenido' => 'required|string|min:1|max:2000',
+        ]);
+
+        $comentario->update(['contenido' => trim($datos['contenido'])]);
+        $comentario->load(self::CON);
+
+        return response()->json([
+            'mensaje' => 'Comentario actualizado correctamente',
+            'data'    => $this->transformar($comentario, $request->user()),
+        ]);
+    }
+
+    // ------------------------------------------------------------------
+    // DELETE /foro/comentarios/{comentario}
+    // admin
+    // ------------------------------------------------------------------
+    public function destroy(Request $request, ComentariosForo $comentario)
+    {
+        $usuario = $request->user();
+
+        if ($comentario->autor_id !== $usuario->id && $usuario->rol !== 'admin') {
+            return response()->json(['mensaje' => 'No puedes eliminar este comentario'], 403);
+        }
+
+        $comentario->delete();
+
+        return response()->json(['mensaje' => 'Comentario eliminado correctamente']);
     }
 }
