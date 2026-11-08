@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Codigo_Verificacion extends Model
+class CodigoVerificacion extends Model
 {
     protected $table = 'codigos_verificacion';
 
@@ -13,6 +13,15 @@ class Codigo_Verificacion extends Model
         'codigo_hash',
         'expira_en',
         'intentos',
+        'usado_en',
+    ];
+
+    protected $hidden = ['codigo_hash'];
+
+    protected $casts = [
+        'expira_en' => 'datetime',
+        'usado_en'  => 'datetime',
+        'intentos'  => 'integer',
     ];
 
     //------RELACIONES---------

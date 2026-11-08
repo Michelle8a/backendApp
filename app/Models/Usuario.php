@@ -111,6 +111,6 @@ class Usuario extends Authenticatable implements JWTSubject
     }
 
     public function codigos_verificacion(){
-        return $this->hasMany(Codigo_Verificacion::class, 'usuario_id');
+        return $this->hasMany(CodigoVerificacion::class, 'usuario_id');
     }
 }

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Codigo_Verificacion;
+use App\Models\CodigoVerificacion;
 use Illuminate\Http\Request;
 
-class Codigo_VerificacionController extends Controller
+class CodigoVerificacionController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class Codigo_VerificacionController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Codigo_Verificacion $codigo_Verificacion)
+    public function show(CodigoVerificacion $codigoVerificacion)
     {
         //
     }
@@ -42,7 +42,7 @@ class Codigo_VerificacionController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Codigo_Verificacion $codigo_Verificacion)
+    public function edit(CodigoVerificacion $codigoVerificacion)
     {
         //
     }
@@ -50,7 +50,7 @@ class Codigo_VerificacionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Codigo_Verificacion $codigo_Verificacion)
+    public function update(Request $request, CodigoVerificacion $codigoVerificacion)
     {
         //
     }
@@ -58,7 +58,7 @@ class Codigo_VerificacionController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Codigo_Verificacion $codigo_Verificacion)
+    public function destroy(CodigoVerificacion $codigoVerificacion)
     {
         //
     }
