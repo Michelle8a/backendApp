@@ -33,6 +33,14 @@ class PacienteController extends Controller
         return response()->json($this->formatear($paciente, true), 200);
     }
 
+    //PUT: el paciente actualiza SU perfil sin necesitar el id
+    public function actualizarMiPerfil(Request $request)
+    {
+        $paciente = Paciente::where('usuario_id', $request->user()->id)->firstOrFail();
+
+        return $this->update($request, $paciente);
+    }
+
     //POST
     public function store(Request $request)
     {
@@ -62,26 +70,24 @@ class PacienteController extends Controller
             ];
         }
 
-
-
         $datos = $request->validate($reglas);
 
-         //el paciente solo puede CREAR su perfil, el id lo trae el claim del token
-         if($esPaciente){
+        //el paciente solo puede CREAR su perfil, el id lo trae el claim del token
+        if($esPaciente){
             if(Paciente::where('usuario_id', $usuario->id)->exists()){
                 return response()->json(['mensaje' => 'ya tienes un perfil de paciente'], 409);
             }
             $datos['usuario_id'] = $usuario->id;
-         }
+        }
 
-         //el DUI se guarda cifrado, nunca en texto plano
-         $datos['dui_cifrado'] = Crypt::encryptString($datos['dui']);
-         unset($datos['dui']);
+        //el DUI se guarda cifrado, nunca en texto plano
+        $datos['dui_cifrado'] = Crypt::encryptString($datos['dui']);
+        unset($datos['dui']);
 
-         $paciente = Paciente::create($datos);
-         BitacoraAuditoria::registrar('crear', 'paciente', $paciente->id);
+        $paciente = Paciente::create($datos);
+        BitacoraAuditoria::registrar('crear', 'paciente', $paciente->id);
 
-         return response()->json($this->formatear($paciente, true), 201);
+        return response()->json($this->formatear($paciente, true), 201);
     }
 
     //GET uno
@@ -106,8 +112,8 @@ class PacienteController extends Controller
             'apellidos' => 'sometimes|string|max:100',
             'dui' => ['sometimes', 'string', 'regex:/^\d{8}-\d$/'],
             'fecha_nacimiento' => 'sometimes|date|before:today',
-            'sexo' => 'sometimes|in:M,F,otro',
-            'tipo_sangre' => 'sometimes|string|max:3',
+            'sexo' => 'sometimes|in:M,F,Otro',
+            'tipo_sangre' => 'sometimes|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
             'direccion' => 'sometimes|string|max:255',
             'latitud' => 'sometimes|numeric|between:-90,90',
             'longitud' => 'sometimes|numeric|between:-180,180',
@@ -126,7 +132,7 @@ class PacienteController extends Controller
     }
 
     //DELETE (solo admin: la ruta lo exige y aqui se vuelve a verificar)
-    public function destroy(Paciente $paciente)
+    public function destroy(Request $request, Paciente $paciente)
     {
         if($request->user()->rol !== 'admin'){
             abort(403, 'Solo un administrador puede eliminar pacientes');
@@ -168,7 +174,7 @@ class PacienteController extends Controller
             try{
                 $paciente->setAttribute('dui', Crypt::decryptString($paciente->dui_cifrado));
             }catch(\Throwable $e){
-                $paciente->setAttribute('dui', null); //dato viejo que no estaba cifrado 
+                $paciente->setAttribute('dui', null); //dato viejo que no estaba cifrado
             }
         }
 

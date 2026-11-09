@@ -9,17 +9,23 @@ class Medico extends Model
     protected $table = 'medicos';
 
     protected $fillable = [
-        
         'usuario_id',
         'centro_salud_id',
         'jvpm',
         'nombres',
         'apellidos',
+        'es_general',
         'biografia',
         'tarifa',
         'calificacion_promedio',
-        'verificado'
+        'verificado',
+    ];
 
+    //para que la API devuelva true/false y numeros en vez de 1/0 y texto
+    protected $casts = [
+        'es_general' => 'boolean',
+        'verificado' => 'boolean',
+        'tarifa' => 'float',
     ];
 
     //------------RELACIONES----------
