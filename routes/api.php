@@ -38,6 +38,8 @@ use App\Http\Controllers\DetalleRecetaController;
 use App\Http\Controllers\RecetaCompartidaController;
 use App\Http\Controllers\HistorialMedicoController;
 use App\Http\Controllers\PacienteAlergiaController;
+use App\Http\Controllers\CodigoVerificacionController;
+use App\Http\Controllers\CuentaController;
 
 //------------AUTENTICACION (JWT)--------------------
 //publicas
@@ -51,6 +53,15 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout',[AuthController::class, 'logout']);
 });
 
+//------------VERIFICACION DE CORREO (OTP)--------------------
+Route::middleware(['auth:api'])->prefix('auth/verificacion')->group(function () {
+    Route::post('/enviar', [CodigoVerificacionController::class, 'enviar'])->middleware('throttle:3,1');
+    Route::post('/verificar', [CodigoVerificacionController::class, 'verificar'])->middleware('throttle:10,1');
+});
+
+
+//------------CUENTA DEL USUARIO--------------------
+Route::middleware(['auth:api', 'throttle:5,1'])->put('/auth/correo', [CuentaController::class, 'cambiarCorreo']);
 
 //------------SOLO ADMIN--------------------
 // USUARIOS (antes era publico, cualquiera podia crear admins o borrar usuarios)
