@@ -37,6 +37,8 @@ use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\DetalleRecetaController;
 use App\Http\Controllers\RecetaCompartidaController;
 use App\Http\Controllers\HistorialMedicoController;
+use App\Http\Controllers\PacienteAlergiaController;
+
 //------------AUTENTICACION (JWT)--------------------
 //publicas
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -79,6 +81,20 @@ Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->get('/pacientes/{p
 
 //eliminar: solo el admin
 Route::middleware(['auth:api', 'rol:admin'])->delete('/pacientes/{paciente}', [PacienteController::class, 'destroy']);
+
+
+//------------ALERGIAS DEL PACIENTE--------------------
+//el paciente gestiona sus propias alergias
+Route::middleware(['auth:api', 'rol:paciente'])->group(function () {
+    Route::get('/mi-paciente/alergias', [PacienteAlergiaController::class, 'indexMias']);
+    Route::post('/mi-paciente/alergias', [PacienteAlergiaController::class, 'store']);
+    Route::put('/mi-paciente/alergias/{alergiaId}', [PacienteAlergiaController::class, 'update']);
+    Route::delete('/mi-paciente/alergias/{alergiaId}', [PacienteAlergiaController::class, 'destroy']);
+});
+
+//el medico y el admin solo consultan
+Route::middleware(['auth:api', 'rol:medico,admin'])
+    ->get('/pacientes/{paciente}/alergias', [PacienteAlergiaController::class, 'indexDe']);
 
 
 //------------MEDICOS--------------------
