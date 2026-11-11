@@ -25,6 +25,13 @@ class Usuario extends Authenticatable implements JWTSubject
 
     //para que no salga en las respuestas json
     protected $hidden = ['contrasena_hash'];
+    
+    //para que las fechas se manejen como fecha y no como texto
+    protected $casts = [
+        'correo_verificado_en'    => 'datetime',
+        'consentimiento_fecha'    => 'datetime',
+        'consentimiento_aceptado' => 'boolean',
+    ];
 
     //porque la contraseña esta en contrasena_hash y no en password
     public function getAuthPassword()
