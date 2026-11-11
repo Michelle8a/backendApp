@@ -37,6 +37,8 @@ use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\DetalleRecetaController;
 use App\Http\Controllers\RecetaCompartidaController;
 use App\Http\Controllers\HistorialMedicoController;
+use App\Http\Controllers\PacienteEnfermedadController;
+use App\Http\Controllers\SignosVitalesController;
 //------------AUTENTICACION (JWT)--------------------
 //publicas
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -474,3 +476,29 @@ Route::middleware(['auth:api', 'rol:medico,admin'])->group(function () {
 //eliminar: solo admin
 Route::middleware(['auth:api', 'rol:admin'])
     ->delete('/historial_medico/{historial}', [HistorialMedicoController::class, 'destroy']);
+
+//------------PACIENTE - ENFERMEDADES--------------------
+//ver: los tres roles (el controller revisa que el paciente solo vea lo suyo)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])
+    ->get('/pacientes/{paciente}/enfermedades', [PacienteEnfermedadController::class, 'index']);
+
+//asignar, actualizar y quitar: paciente (el suyo) y admin
+Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
+    Route::post('/pacientes/{paciente}/enfermedades', [PacienteEnfermedadController::class, 'store']);
+    Route::put('/pacientes/{paciente}/enfermedades/{enfermedad}', [PacienteEnfermedadController::class, 'update']);
+    Route::delete('/pacientes/{paciente}/enfermedades/{enfermedad}', [PacienteEnfermedadController::class, 'destroy']);
+});
+
+//------------SIGNOS VITALES--------------------
+//ver y listar: los tres roles (el controller revisa que el paciente solo vea lo suyo)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
+    Route::get('/pacientes/{paciente}/signos_vitales', [SignosVitalesController::class, 'index']);
+    Route::get('/signos_vitales/{signo}', [SignosVitalesController::class, 'show']);
+});
+
+//crear, actualizar y eliminar: paciente (los suyos) y admin
+Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
+    Route::post('/pacientes/{paciente}/signos_vitales', [SignosVitalesController::class, 'store']);
+    Route::put('/signos_vitales/{signo}', [SignosVitalesController::class, 'update']);
+    Route::delete('/signos_vitales/{signo}', [SignosVitalesController::class, 'destroy']);
+});
