@@ -18,6 +18,12 @@ class PublicacionForo extends Model
         'creado_en'
     ];
 
+    //los campos de moderacion (oculta, oculta_en, oculta_por) NO van en fillable
+    //a proposito: solo los toca el panel admin con forceFill
+    protected $casts = [
+        'oculta'    => 'boolean',
+        'oculta_en' => 'datetime',
+    ];
 
     //-------------RELACIONES-----------
 
@@ -35,5 +41,10 @@ class PublicacionForo extends Model
 
     public function me_gusta(){
         return $this->belongsToMany(Usuario::class, 'me_gusta_foro', 'publicacion_id', 'autor_id')->withTimestamps();
+    }
+
+    //admin que la oculto
+    public function moderador(){
+        return $this->belongsTo(Usuario::class, 'oculta_por');
     }
 }

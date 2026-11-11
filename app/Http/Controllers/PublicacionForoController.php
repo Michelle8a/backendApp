@@ -19,6 +19,7 @@ class PublicacionForoController extends Controller
             'titulo'      => $p->titulo,
             'contenido'   => $p->contenido,
             'anonimo'     => $p->anonimo,
+            'oculta'      => (bool) $p->oculta,
             'creado_en'   => $p->creado_en,
             'categoria'   => $p->categoria_foro?->only(['id', 'nombre']),
             'autor'       => $puedeVerAutor && $p->usuario
@@ -38,11 +39,22 @@ class PublicacionForoController extends Controller
         return $user;
     }
 
+    //moderacion: las publicaciones ocultas solo las ve el admin
     private function consulta(Usuario $user)
     {
         return PublicacionForo::with(['usuario:id,rol', 'categoria_foro:id,nombre'])
             ->withCount(['comentarios', 'me_gusta'])
-            ->withExists(['me_gusta as le_gusta' => fn ($q) => $q->where('usuarios.id', $user->id)]);
+            ->withExists(['me_gusta as le_gusta' => fn ($q) => $q->where('usuarios.id', $user->id)])
+            ->when(! $user->tieneRol('admin'), fn ($q) => $q->where('oculta', false));
+    }
+
+    //para los metodos que usan route model binding: si esta oculta y no es admin, "no existe"
+    private function ocultaParaMi(PublicacionForo $publicacion, Usuario $user)
+    {
+        if ($publicacion->oculta && ! $user->tieneRol('admin')) {
+            return response()->json(['message' => 'Publicación no encontrada'], 404);
+        }
+        return null;
     }
 
     //-------- GET /foro/publicaciones --------
@@ -74,6 +86,8 @@ class PublicacionForoController extends Controller
     public function show(PublicacionForo $publicacion)
     {
         $user = $this->usuarioActual();
+        if ($r = $this->ocultaParaMi($publicacion, $user)) return $r;
+
         $p = $this->consulta($user)->findOrFail($publicacion->id);
 
         return response()->json($this->formatear($p, $user));
@@ -104,6 +118,7 @@ class PublicacionForoController extends Controller
     public function update(Request $request, PublicacionForo $publicacion)
     {
         $user = $this->usuarioActual();
+        if ($r = $this->ocultaParaMi($publicacion, $user)) return $r;
 
         if ($publicacion->autor_id !== $user->id && !$user->tieneRol('admin')) {
             return response()->json(['message' => 'No puedes editar esta publicación'], 403);
@@ -126,6 +141,7 @@ class PublicacionForoController extends Controller
     public function destroy(PublicacionForo $publicacion)
     {
         $user = $this->usuarioActual();
+        if ($r = $this->ocultaParaMi($publicacion, $user)) return $r;
 
         if ($publicacion->autor_id !== $user->id && !$user->tieneRol('admin')) {
             return response()->json(['message' => 'No puedes eliminar esta publicación'], 403);
@@ -142,7 +158,8 @@ class PublicacionForoController extends Controller
     //-------- POST /foro/publicaciones/{publicacion}/me-gusta (toggle) --------
     public function toggleMeGusta(PublicacionForo $publicacion)
     {
-        $user = auth('api')->user();
+        $user = $this->usuarioActual();
+        if ($r = $this->ocultaParaMi($publicacion, $user)) return $r;
 
         $resultado = $publicacion->me_gusta()->toggle($user->id);
         $leGusta = count($resultado['attached']) > 0;

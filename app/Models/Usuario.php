@@ -67,7 +67,10 @@ class Usuario extends Authenticatable implements JWTSubject
         return in_array($this->rol, $roles, true);
     }
     
-    
+    public function getAuthIdentifierName()
+    {
+        return 'id';
+    }
     
     
     //-----------RELACIONES-------------

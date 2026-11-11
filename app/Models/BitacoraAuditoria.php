@@ -36,7 +36,8 @@ class BitacoraAuditoria extends Model
      *
      *   BitacoraAuditoria::registrar('crear', 'usuario', $usuario->id);
      *
-     * Si no se pasa $usuarioId, se toma el usuario del token JWT.
+     * Si no se pasa $usuarioId, se toma el usuario de la sesión web (panel admin)
+     * o, si no hay, el del token JWT (app móvil).
      * La IP sale de la petición actual, nunca del cliente.
      */
     public static function registrar(
@@ -46,7 +47,7 @@ class BitacoraAuditoria extends Model
         ?int $usuarioId = null
     ): self {
         return static::create([
-            'usuario_id' => $usuarioId ?? auth('api')->id(),
+            'usuario_id' => $usuarioId ?? auth('web')->id() ?? auth('api')->id(),
             'accion'     => $accion,
             'recurso'    => $recurso,
             'recurso_id' => $recursoId,

@@ -13,8 +13,17 @@ class ComentariosForoController extends Controller
         'autor:id,rol',
         'autor.paciente:id,usuario_id,nombres',
         'autor.medico:id,usuario_id,nombres,apellidos',
-        'publicacion:id,autor_id,anonimo',
+        'publicacion:id,autor_id,anonimo,oculta',
     ];
+
+    //moderacion: si la publicacion esta oculta, solo el admin puede tocar sus comentarios
+    private function publicacionOculta(?PublicacionForo $publicacion, $usuario)
+    {
+        if ($publicacion && $publicacion->oculta && $usuario->rol !== 'admin') {
+            return response()->json(['mensaje' => 'Publicacion no encontrada'], 404);
+        }
+        return null;
+    }
 
     private function transformar(ComentariosForo $c, $usuarioActual): array
     {
@@ -57,6 +66,8 @@ class ComentariosForoController extends Controller
     // ------------------------------------------------------------------
     public function index(Request $request, PublicacionForo $publicacion)
     {
+        if ($r = $this->publicacionOculta($publicacion, $request->user())) return $r;
+
         $request->validate(['per_page' => 'nullable|integer|min:1|max:100']);
 
         $comentarios = ComentariosForo::with(self::CON)
@@ -77,6 +88,8 @@ class ComentariosForoController extends Controller
     // ------------------------------------------------------------------
     public function store(Request $request, PublicacionForo $publicacion)
     {
+        if ($r = $this->publicacionOculta($publicacion, $request->user())) return $r;
+
         $datos = $request->validate([
             'contenido' => 'required|string|min:1|max:2000',
         ]);
@@ -103,6 +116,8 @@ class ComentariosForoController extends Controller
     {
         $comentario->load(self::CON);
 
+        if ($r = $this->publicacionOculta($comentario->publicacion, $request->user())) return $r;
+
         return response()->json([
             'data' => $this->transformar($comentario, $request->user()),
         ]);
@@ -114,6 +129,9 @@ class ComentariosForoController extends Controller
     // ------------------------------------------------------------------
     public function update(Request $request, ComentariosForo $comentario)
     {
+        $comentario->loadMissing('publicacion:id,autor_id,anonimo,oculta');
+        if ($r = $this->publicacionOculta($comentario->publicacion, $request->user())) return $r;
+
         if ($comentario->autor_id !== $request->user()->id) {
             return response()->json(['mensaje' => 'Solo el autor puede editar este comentario'], 403);
         }
@@ -138,6 +156,9 @@ class ComentariosForoController extends Controller
     public function destroy(Request $request, ComentariosForo $comentario)
     {
         $usuario = $request->user();
+
+        $comentario->loadMissing('publicacion:id,autor_id,anonimo,oculta');
+        if ($r = $this->publicacionOculta($comentario->publicacion, $usuario)) return $r;
 
         if ($comentario->autor_id !== $usuario->id && $usuario->rol !== 'admin') {
             return response()->json(['mensaje' => 'No puedes eliminar este comentario'], 403);
