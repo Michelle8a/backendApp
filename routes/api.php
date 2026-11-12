@@ -42,6 +42,8 @@ use App\Http\Controllers\SignosVitalesController;
 use App\Http\Controllers\PacienteAlergiaController;
 use App\Http\Controllers\CodigoVerificacionController;
 use App\Http\Controllers\CuentaController;
+use App\Http\Controllers\TriajeController;
+use App\Http\Controllers\MedicoDisponibilidadController;
 
 //------------AUTENTICACION (JWT)--------------------
 //publicas
@@ -529,3 +531,16 @@ Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
     Route::put('/signos_vitales/{signo}', [SignosVitalesController::class, 'update']);
     Route::delete('/signos_vitales/{signo}', [SignosVitalesController::class, 'destroy']);
 });
+
+
+//------------TRIAJE CON IA (admision previa a la cita)--------------------
+Route::middleware(['auth:api', 'rol:paciente'])->prefix('triaje')->group(function () {
+    Route::post('/', [TriajeController::class, 'iniciar']);
+    Route::post('/{conversacion}/mensajes', [TriajeController::class, 'enviar'])->middleware('throttle:20,1');
+    Route::post('/{conversacion}/vincular-cita', [TriajeController::class, 'vincularCita']);
+    Route::post('/{conversacion}/agendar', [TriajeController::class, 'agendar']);
+});
+
+// horas libres de un medico (los tres roles)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])
+    ->get('/medicos/{medico}/disponibilidad', [MedicoDisponibilidadController::class, 'index']);

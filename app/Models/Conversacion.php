@@ -9,8 +9,9 @@ class Conversacion extends Model
     protected $table = 'conversaciones';
 
     protected $fillable = [
-        'cita_id',
-        'creado_en'
+        'cita_id', 'creado_en',
+        'paciente_id', 'tipo', 'estado_triaje',
+        'especialidad_sugerida_id', 'resumen_triaje',
     ];
 
     //---------RELACIONES----------
