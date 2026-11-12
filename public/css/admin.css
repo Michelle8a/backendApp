@@ -1,0 +1,372 @@
+/* ==========================================================
+   Panel Admin · estilos compartidos por todos los módulos
+   Misma paleta azul oscuro que la barra y la página de inicio
+   ========================================================== */
+:root {
+    --ad-navy: #071b33;
+    --ad-navy-2: #0d2d50;
+    --ad-navy-3: #164873;
+    --ad-accent: #1f6fb5;
+    --ad-accent-hover: #185a94;
+    --ad-accent-ring: rgba(31, 111, 181, .2);
+    --ad-soft: #eaf1f8;
+    --ad-page: #f1f5f9;
+    --ad-border: #d8e1eb;
+    --ad-text: #26384c;
+    --ad-muted: #64758a;
+    --ad-radius: 12px;
+    --ad-radius-sm: 8px;
+
+    /* alias: las vistas que usan los nombres anteriores siguen funcionando */
+    --brand: var(--ad-navy-2);
+    --brand-soft: var(--ad-soft);
+    --brand-hover: var(--ad-navy-3);
+    --admin-primary: var(--ad-navy-2);
+    --admin-primary-dark: var(--ad-navy);
+    --admin-primary-soft: var(--ad-soft);
+    --admin-border: var(--ad-border);
+}
+
+body {
+    background: var(--ad-page);
+    color: var(--ad-text);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---------- Encabezado de cada página ---------- */
+.admin-header,
+.admin-hero,
+.page-header {
+    margin-bottom: 1.5rem;
+    padding: 1.6rem 1.9rem;
+    color: #fff;
+    background: linear-gradient(120deg, var(--ad-navy) 0%, var(--ad-navy-2) 60%, var(--ad-navy-3) 100%);
+    border: 1px solid #1c3d66;
+    border-left: 4px solid #4f9be0;
+    border-radius: var(--ad-radius);
+    box-shadow: 0 8px 22px rgba(7, 27, 51, .18);
+}
+.admin-header h1,
+.admin-hero h1,
+.page-header h1 {
+    margin: 0 0 .3rem;
+    color: #fff;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -.3px;
+}
+.admin-header p,
+.admin-hero p,
+.page-header p {
+    margin: 0;
+    color: #b4c6da;
+}
+
+/* ---------- Barra de acciones y buscador ---------- */
+.admin-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.admin-toolbar .search-box { max-width: 320px; flex: 1 1 220px; }
+.admin-search { display: flex; gap: .5rem; }
+.admin-search input { min-width: 240px; }
+.admin-summary { color: var(--ad-muted); font-size: .9rem; }
+
+/* ---------- Tarjetas ---------- */
+.admin-card {
+    margin-bottom: 1.25rem;
+    padding: 1.5rem;
+    background: #fff;
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius);
+    box-shadow: 0 2px 8px rgba(7, 27, 51, .05);
+}
+/* tarjeta con barra de título: el relleno lo pone el cuerpo */
+.admin-card:has(> .admin-card-title) { padding: 0; overflow: hidden; }
+.admin-card .admin-card-title {
+    padding: .85rem 1.25rem;
+    color: var(--ad-navy-2);
+    font-size: .95rem;
+    font-weight: 700;
+    background: #f4f7fb;
+    border-bottom: 1px solid var(--ad-border);
+}
+.admin-card .admin-card-body { padding: 1.25rem; }
+
+/* ---------- Formularios y filtros ---------- */
+.admin-form label,
+.admin-form .form-label,
+.admin-filters .form-label {
+    margin-bottom: .3rem;
+    color: var(--ad-navy-2);
+    font-size: .85rem;
+    font-weight: 600;
+}
+.admin-form .form-control,
+.admin-form .form-select,
+.admin-filters .form-control,
+.admin-filters .form-select,
+.admin-search .form-control {
+    border-color: #c9d6e3;
+    border-radius: var(--ad-radius-sm);
+}
+.form-control:focus,
+.form-select:focus,
+.admin-form .form-control:focus,
+.admin-filters .form-control:focus,
+.admin-filters .form-select:focus {
+    border-color: var(--ad-accent);
+    box-shadow: 0 0 0 .2rem var(--ad-accent-ring);
+}
+
+/* ---------- Botones ---------- */
+.btn-admin,
+.btn-brand,
+.btn-azul {
+    padding-inline: 1rem;
+    color: #fff;
+    font-weight: 600;
+    background-color: var(--ad-accent);
+    border-color: var(--ad-accent);
+    border-radius: var(--ad-radius-sm);
+}
+.btn-admin:hover, .btn-admin:focus,
+.btn-brand:hover, .btn-brand:focus,
+.btn-azul:hover, .btn-azul:focus {
+    color: #fff;
+    background-color: var(--ad-accent-hover);
+    border-color: var(--ad-accent-hover);
+}
+.btn-outline-admin,
+.btn-outline-brand {
+    color: var(--ad-accent);
+    font-weight: 600;
+    background: #fff;
+    border-color: var(--ad-accent);
+    border-radius: var(--ad-radius-sm);
+}
+.btn-outline-admin:hover, .btn-outline-admin:focus,
+.btn-outline-brand:hover, .btn-outline-brand:focus {
+    color: #fff;
+    background: var(--ad-accent);
+    border-color: var(--ad-accent);
+}
+
+/* ---------- Tablas ---------- */
+.table-admin,
+.tabla-admin {
+    --bs-table-hover-bg: var(--ad-soft);
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius);
+}
+.table-admin thead th,
+.tabla-admin thead th {
+    --bs-table-bg: var(--ad-navy-2);
+    --bs-table-accent-bg: transparent;
+    padding: .85rem .9rem;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    vertical-align: middle;
+    background-color: var(--ad-navy-2);
+    border-color: #1c3d66;
+}
+.table-admin thead th:first-child,
+.tabla-admin thead th:first-child { border-top-left-radius: calc(var(--ad-radius) - 1px); }
+.table-admin thead th:last-child,
+.tabla-admin thead th:last-child { border-top-right-radius: calc(var(--ad-radius) - 1px); }
+.table-admin td,
+.tabla-admin td { vertical-align: middle; border-color: #e6edf4; }
+.table-admin tbody tr:hover > *,
+.tabla-admin tbody tr:hover > * { --bs-table-bg-state: var(--ad-soft); }
+.table-admin tbody tr:last-child td,
+.tabla-admin tbody tr:last-child td { border-bottom: 0; }
+
+/* tabla dentro de una tarjeta: encabezado claro */
+.admin-card table thead th {
+    --bs-table-bg: var(--ad-soft);
+    color: var(--ad-navy-2);
+    background-color: var(--ad-soft);
+    border-color: var(--ad-border);
+}
+
+/* publicación oculta (moderación) */
+.table-admin tbody tr.fila-oculta td,
+.tabla-admin tbody tr.fila-oculta td { --bs-table-bg: #eef1f5; color: var(--ad-muted); }
+.table-admin tbody tr.fila-oculta:hover td,
+.tabla-admin tbody tr.fila-oculta:hover td { --bs-table-bg: #e3e9f0; }
+
+/* texto largo recortado en tablas */
+.cell-clamp {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* ---------- Etiquetas ---------- */
+.badge-codigo {
+    padding: .35em .65em;
+    color: var(--ad-navy-3);
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: .85rem;
+    font-weight: 700;
+    background: var(--ad-soft);
+}
+.badge-admin,
+.badge-espec {
+    color: var(--ad-navy-3);
+    font-weight: 600;
+    background: var(--ad-soft);
+}
+
+/* ---------- Detalle (etiqueta y valor) ---------- */
+.dato-label { margin-bottom: .1rem; color: var(--ad-muted); font-size: .8rem; }
+.dato-valor { margin-bottom: .9rem; font-weight: 600; color: var(--ad-navy); }
+
+/* ---------- Paginación ---------- */
+.pagination .page-link { color: var(--ad-accent); border-color: var(--ad-border); }
+.pagination .page-link:hover { background: var(--ad-soft); }
+.pagination .page-item.active .page-link,
+.pagination .active > .page-link {
+    color: #fff;
+    background-color: var(--ad-accent);
+    border-color: var(--ad-accent);
+}
+
+/* ---------- Modal de detalle ---------- */
+.admin-modal .modal-content { border: 0; border-radius: var(--ad-radius); overflow: hidden; }
+.admin-modal .modal-header { color: #fff; background: var(--ad-navy-2); }
+.admin-modal .modal-header .btn-close { filter: invert(1) grayscale(1) brightness(2); }
+.admin-modal .contenido-completo { white-space: pre-wrap; word-break: break-word; }
+
+/* ---------- Estado vacío ---------- */
+.empty-state,
+.admin-empty {
+    padding: 2.5rem 1rem;
+    color: var(--ad-muted);
+    text-align: center;
+}
+
+/* ---------- Botones de acción (Agregar / Ver / Modificar / Eliminar / PDF) ---------- */
+.btn { border-radius: var(--ad-radius-sm); font-weight: 600; }
+.btn-success {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #1d8a5b;           --bs-btn-border-color: #1d8a5b;
+    --bs-btn-hover-color: #fff;     --bs-btn-hover-bg: #176f49;   --bs-btn-hover-border-color: #176f49;
+    --bs-btn-active-bg: #176f49;    --bs-btn-active-border-color: #176f49;
+}
+.btn-info {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--ad-accent);  --bs-btn-border-color: var(--ad-accent);
+    --bs-btn-hover-color: #fff;     --bs-btn-hover-bg: var(--ad-accent-hover); --bs-btn-hover-border-color: var(--ad-accent-hover);
+    --bs-btn-active-bg: var(--ad-accent-hover); --bs-btn-active-border-color: var(--ad-accent-hover);
+}
+.btn-warning {
+    --bs-btn-color: #2b2208;
+    --bs-btn-bg: #e3ad32;           --bs-btn-border-color: #e3ad32;
+    --bs-btn-hover-color: #2b2208;  --bs-btn-hover-bg: #cf9a22;   --bs-btn-hover-border-color: #cf9a22;
+    --bs-btn-active-bg: #cf9a22;    --bs-btn-active-border-color: #cf9a22;
+}
+.btn-danger {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #c43d3d;           --bs-btn-border-color: #c43d3d;
+    --bs-btn-hover-color: #fff;     --bs-btn-hover-bg: #a63030;   --bs-btn-hover-border-color: #a63030;
+    --bs-btn-active-bg: #a63030;    --bs-btn-active-border-color: #a63030;
+}
+.btn-outline-secondary {
+    --bs-btn-color: var(--ad-muted);
+    --bs-btn-border-color: #c0cedc;
+    --bs-btn-hover-color: var(--ad-navy-2);  --bs-btn-hover-bg: var(--ad-soft);  --bs-btn-hover-border-color: #9bb3cc;
+    --bs-btn-active-color: var(--ad-navy-2); --bs-btn-active-bg: var(--ad-soft); --bs-btn-active-border-color: #9bb3cc;
+}
+
+/* interruptor de verificación y casillas */
+.form-check-input:checked { background-color: var(--ad-accent); border-color: var(--ad-accent); }
+.form-check-input:focus { border-color: var(--ad-accent); box-shadow: 0 0 0 .2rem var(--ad-accent-ring); }
+
+/* etiquetas de especialidad */
+.badge.bg-secondary { background-color: var(--ad-navy-3) !important; }
+
+/* ---------- Pantallas de médicos: panel, secciones y listas ---------- */
+.panel {
+    margin-bottom: 1rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border: 1px solid var(--ad-border);
+    border-radius: var(--ad-radius);
+    box-shadow: 0 2px 8px rgba(7, 27, 51, .05);
+}
+.tabla-admin { margin-bottom: 0; }
+.titulo-seccion {
+    margin: 1.5rem 0 1rem;
+    padding-bottom: .4rem;
+    color: var(--ad-navy-2);
+    font-size: 1.05rem;
+    font-weight: 700;
+    border-bottom: 2px solid var(--ad-border);
+}
+.lista-check {
+    max-height: 220px;
+    overflow-y: auto;
+    padding: .5rem .85rem;
+    background: #fff;
+    border: 1px solid #c9d6e3;
+    border-radius: var(--ad-radius-sm);
+}
+.form-label {
+    margin-bottom: .3rem;
+    color: var(--ad-navy-2);
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+/* ---------- Botón "Descargar reporte PDF": mismo estilo en todas las pantallas ----------
+   Se fijan las propiedades directamente (no solo variables) para ganarle a
+   .btn-outline-admin, .btn-danger, .btn-outline-danger, etc. */
+.btn-pdf,
+a.btn[href*="reporte"],
+a.btn[href*="/pdf"] {
+    color: #8c1d3f;
+    background-color: #fff;
+    border-color: #8c1d3f;
+    font-weight: 600;
+}
+.btn-pdf:hover,
+a.btn[href*="reporte"]:hover,
+a.btn[href*="/pdf"]:hover {
+    color: #fff;
+    background-color: #8c1d3f;
+    border-color: #8c1d3f;
+}
+.btn-pdf:active,
+a.btn[href*="reporte"]:active,
+a.btn[href*="/pdf"]:active {
+    color: #fff;
+    background-color: #731834;
+    border-color: #731834;
+}
+.btn-pdf:focus-visible,
+a.btn[href*="reporte"]:focus-visible,
+a.btn[href*="/pdf"]:focus-visible {
+    box-shadow: 0 0 0 .2rem rgba(140, 29, 63, .3);
+}
+
+/* ---------- Pantallas pequeñas ---------- */
+@media (max-width: 575px) {
+    .admin-header, .admin-hero, .page-header { padding: 1.25rem; }
+    .admin-header h1, .admin-hero h1, .page-header h1 { font-size: 1.35rem; }
+    .admin-search input { min-width: 0; flex: 1; }
+}

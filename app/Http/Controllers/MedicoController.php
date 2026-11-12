@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Medico;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use App\Models\BitacoraAuditoria;
 
 class MedicoController extends Controller
@@ -21,7 +24,7 @@ class MedicoController extends Controller
 
         $esAdmin = $request->user()->rol === 'admin';
 
-        $consulta = Medico::with('centro_salud');
+        $consulta = Medico::with(['centro_salud', 'especialidades', 'idiomas']);
 
         if($esAdmin){
             $consulta->with('usuario:id,correo,telefono,rol');
@@ -35,6 +38,10 @@ class MedicoController extends Controller
 
         if(isset($filtros['centro_salud_id'])){
             $consulta->where('centro_salud_id', $filtros['centro_salud_id']);
+        }
+
+        if(isset($filtros['es_general'])){
+            $consulta->where('es_general', $filtros['es_general']);
         }
 
         if(isset($filtros['q'])){
@@ -60,14 +67,20 @@ class MedicoController extends Controller
         return response()->json($this->formatear($medico, true), 200);
     }
 
-    //POST: para crear un medico
+    //POST: registrar un medico. SOLO el admin (la ruta lo exige y aqui se vuelve a verificar)
     public function store(Request $request)
     {
-        $usuario = $request->user();
-        $esAdmin = $usuario->rol ==='admin';
-        $esMedico = $usuario->rol === 'medico';
+        if($request->user()->rol !== 'admin'){
+            abort(403, 'Solo un administrador puede registrar medicos');
+        }
 
-        $reglas = [
+        $datos = $request->validate([
+            //el usuario (con rol medico) al que pertenece el perfil
+            'usuario_id' => [
+                'required',
+                Rule::exists('usuarios', 'id')->where('rol', 'medico'),
+                'unique:medicos,usuario_id',
+            ],
             'centro_salud_id' => 'required|exists:centros_salud,id',
             'jvpm' => 'required|string|max:100|unique:medicos,jvpm',
             'nombres' => 'required|string|max:100',
@@ -75,36 +88,92 @@ class MedicoController extends Controller
             'es_general' => 'required|boolean',
             'biografia' => 'nullable|string|max:200',
             'tarifa' => 'required|numeric|min:0|max:999999.99',
-        ];
+            'verificado' => 'sometimes|boolean',
+            'especialidades' => 'sometimes|array',
+            'especialidades.*' => 'integer|exists:especialidades,id',
+            'idiomas' => 'sometimes|array',
+            'idiomas.*' => 'integer|exists:idiomas,id',
+        ]);
 
-        //el admin indica a que usuario (con rol medico) pertenece el perfil
-        if($esAdmin){
-            $reglas['usuario_id'] = [
-                'required',
-                Rule::exists('usuarios', 'id')->where('rol', 'medico'),
-                'unique:medicos,usuario_id',
-            ];
-            $reglas['verificado'] = 'sometimes|boolean';
-        }
+        //las relaciones se guardan aparte, no son columnas de medicos
+        $especialidades = $datos['especialidades'] ?? null;
+        $idiomas = $datos['idiomas'] ?? null;
+        unset($datos['especialidades'], $datos['idiomas']);
 
-        $datos = $request->validate($reglas);
+        $datos['verificado'] = $datos['verificado'] ?? false;
 
-        //el medico solo CREA SU perfil, el id sale del token
-        if($esMedico){
-            if(Medico::where('usuario_id', $usuario->id)->exists()){
-                return response()->json(['mensaje' => 'Ya tienes un perfil de medico']);
-            }
-            $datos['usuario_id'] = $usuario->id;
-        }
-
-        //un medico nuevo queda pendiente hasta que el admin lo verifique
-        $datos['verificado'] = $esAdmin ? ($datos['verificado'] ?? false) : false;
-
-        //forceFill porque es_general aun no es $fillable del modelo
+        //forceFill por si es_general aun no es $fillable del modelo
         $medico = new Medico();
         $medico->forceFill($datos)->save();
 
+        if($especialidades !== null) $medico->especialidades()->sync($especialidades);
+        if($idiomas !== null) $medico->idiomas()->sync($idiomas);
+
         BitacoraAuditoria::registrar('crear', 'medico', $medico->id);
+
+        return response()->json($this->formatear($medico, true), 201);
+    }
+
+    //POST: registrar un medico junto con su cuenta de usuario. SOLO ADMIN
+    public function registrarConUsuario(Request $request)
+    {
+        if($request->user()->rol !== 'admin'){
+            abort(403, 'Solo un administrador puede registrar medicos');
+        }
+
+        $datos = $request->validate([
+            'correo' => 'required|email|max:120|unique:usuarios,correo',
+            'contrasena' => 'required|string|min:8|max:64',
+            'telefono' => 'nullable|string|max:20',
+            'centro_salud_id' => 'required|exists:centros_salud,id',
+            'jvpm' => 'required|string|max:100|unique:medicos,jvpm',
+            'nombres' => 'required|string|max:100',
+            'apellidos' => 'required|string|max:100',
+            'es_general' => 'required|boolean',
+            'biografia' => 'nullable|string|max:200',
+            'tarifa' => 'required|numeric|min:0|max:999999.99',
+            'verificado' => 'sometimes|boolean',
+            'especialidades' => 'sometimes|array',
+            'especialidades.*' => 'integer|exists:especialidades,id',
+            'idiomas' => 'sometimes|array',
+            'idiomas.*' => 'integer|exists:idiomas,id',
+        ]);
+
+        $medico = DB::transaction(function () use ($datos){
+            //1. la cuenta
+            $usuario = new Usuario();
+            $usuario->forceFill([
+                'correo' => $datos['correo'],
+                'contrasena_hash' => Hash::make($datos['contrasena']),
+                'telefono' => $datos['telefono'] ?? null,
+                'rol' => 'medico',
+                'estado' => 'activo',
+                'consentimiento_aceptado' => 1,
+                'consentimiento_version' => '1.0',
+                'consentimiento_fecha' => now(),
+            ])->save();
+
+            //2. el perfil del medico
+            $medico = new Medico();
+            $medico->forceFill([
+                                'usuario_id' => $usuario->id,
+                'centro_salud_id' => $datos['centro_salud_id'],
+                'jvpm' => $datos['jvpm'],
+                'nombres' => $datos['nombres'],
+                'apellidos' => $datos['apellidos'],
+                'es_general' => $datos['es_general'],
+                'biografia' => $datos['biografia'] ?? null,
+                'tarifa' => $datos['tarifa'],
+                'verificado' => $datos['verificado'] ?? true,
+            ])->save();
+
+            $medico->especialidades()->sync($datos['especialidades'] ?? []);
+            $medico->idiomas()->sync($datos['idiomas'] ?? []);
+
+            return $medico;
+        });
+
+        bitacoraAuditoria::registrar('crear', 'medico', $medico->id);
 
         return response()->json($this->formatear($medico, true), 201);
     }
@@ -122,11 +191,10 @@ class MedicoController extends Controller
         return response()->json($this->formatear($medico, $verPrivado), 200);
     }
 
-
     //PUT
     public function update(Request $request, Medico $medico)
     {
-        $this->autorizar($request, $medico);// Solo usuario propietario o admin
+        $this->autorizar($request, $medico); // Solo usuario propietario o admin
 
         $esAdmin = $request->user()->rol === 'admin';
 
@@ -135,13 +203,17 @@ class MedicoController extends Controller
             'centro_salud_id' => 'sometimes|exists:centros_salud,id',
             'nombres' => 'sometimes|string|max:100',
             'apellidos' => 'sometimes|string|max:100',
-            'biografia' => 'sometimes|nullable|string|max:2000',
-            'tarifa' => 'sometimes|numeric|min:0|max:999999.99'
+            'biografia' => 'sometimes|nullable|string|max:200',
+            'tarifa' => 'sometimes|numeric|min:0|max:999999.99',
+            'especialidades' => 'sometimes|array',
+            'especialidades.*' => 'integer|exists:especialidades,id',
+            'idiomas' => 'sometimes|array',
+            'idiomas.*' => 'integer|exists:idiomas,id',
         ];
 
-        //campos que solo el adimin puede cambiar
+        //campos que solo el admin puede cambiar
         if($esAdmin){
-            $reglas['jvpm'] = ['sometimes', 'string', 'max:100', Rule::unique('medicos', 'jvmp')->ignore($medico->id)];
+            $reglas['jvpm'] = ['sometimes', 'string', 'max:100', Rule::unique('medicos', 'jvpm')->ignore($medico->id)];
             $reglas['es_general'] = 'sometimes|boolean';
             $reglas['verificado'] = 'sometimes|boolean';
         }
@@ -149,7 +221,14 @@ class MedicoController extends Controller
         //lo que no este en las reglas se ignora
         $datos = $request->validate($reglas);
 
+        $especialidades = $datos['especialidades'] ?? null;
+        $idiomas = $datos['idiomas'] ?? null;
+        unset($datos['especialidades'], $datos['idiomas']);
+
         $medico->forceFill($datos)->save();
+
+        if($especialidades !== null) $medico->especialidades()->sync($especialidades);
+        if($idiomas !== null) $medico->idiomas()->sync($idiomas);
 
         BitacoraAuditoria::registrar('actualizar', 'medico', $medico->id);
 
@@ -198,10 +277,10 @@ class MedicoController extends Controller
         }
     }
 
-    //armar la respuesta: el centro siempre, los darois de la cuenta solo para usuario y admin
+    //armar la respuesta: el centro, especialidades e idiomas siempre; los datos de la cuenta solo para usuario y admin
     private function formatear(Medico $medico, bool $verPrivado)
     {
-        $medico->load('centro_salud');
+        $medico->load(['centro_salud', 'especialidades', 'idiomas']);
 
         if($verPrivado){
             $medico->load('usuario:id,correo,telefono,rol');

@@ -106,7 +106,7 @@ class PacienteController extends Controller
             'apellidos' => 'sometimes|string|max:100',
             'dui' => ['sometimes', 'string', 'regex:/^\d{8}-\d$/'],
             'fecha_nacimiento' => 'sometimes|date|before:today',
-            'sexo' => 'sometimes|in:M,F,Otro',
+            'sexo' => 'sometimes|in:M,F,otro',
             'tipo_sangre' => 'sometimes|string|max:3',
             'direccion' => 'sometimes|string|max:255',
             'latitud' => 'sometimes|numeric|between:-90,90',
@@ -126,7 +126,7 @@ class PacienteController extends Controller
     }
 
     //DELETE (solo admin: la ruta lo exige y aqui se vuelve a verificar)
-    public function destroy(Request $request, Paciente $paciente)
+    public function destroy(Paciente $paciente)
     {
         if($request->user()->rol !== 'admin'){
             abort(403, 'Solo un administrador puede eliminar pacientes');

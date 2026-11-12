@@ -6,23 +6,30 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-//USO EN RUTAS: ->middleware(['auth:api', 'rol:admin,medico'])
+//Uso en rutas API:  ->middleware(['auth:api', 'rol:admin,medico'])
+//Uso en rutas WEB:  ->middleware(['auth', 'rol:admin'])
 class VerificarRol
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $usuario = $request->user();
+        $esApi = $request->expectsJson() || $request->is('api/*');
 
-        if(! $usuario){
-            return response()->json(['mensaje' => 'No autenticado'], 401);
+        //por si se olvida poner auth antes
+        if (! $usuario) {
+            return $esApi
+                ? response()->json(['mensaje' => 'No autenticado'], 401)
+                : redirect('/')->with('error', 'Debes iniciar sesión para continuar.');
         }
 
-        //Se compara con el rol de la base de datos (nunca con el claim), asi un cambio de rol
-        //surte efecto aunque el token siga vigente
-        if(! in_array($usuario->rol, $roles, true)){
-            return response()->json([
-                'mensaje' => 'No tienes permiso para realizar esta accion.'
-            ], 403);
+        //se compara con el rol de la BD (no con el claim)
+        if (! in_array($usuario->rol, $roles, true)) {
+            if ($esApi) {
+                return response()->json([
+                    'mensaje' => 'No tienes permiso para realizar esta accion',
+                ], 403);
+            }
+            abort(403, 'No tienes permiso para acceder a esta sección.');
         }
 
         return $next($request);

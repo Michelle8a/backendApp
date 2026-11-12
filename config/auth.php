@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Usuario;
 
 return [
 
@@ -17,7 +18,7 @@ return [
 
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'api'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'passwords' => env('AUTH_PASSWORD_BROKER', 'usuarios'),
     ],
 
     /*
@@ -43,10 +44,9 @@ return [
             'provider' => 'users',
         ],
 
-        //GUARD PARA LA API: VALIDA EL TOKEN DE JWT
         'api' => [
             'driver' => 'jwt',
-            'provider' => 'users'
+            'provider' => 'users',
         ],
     ],
 
@@ -100,6 +100,17 @@ return [
 
     'passwords' => [
         'users' => [
+            'provider' => 'users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // El panel web dejó el broker por defecto en "usuarios", pero solo
+        // existía "users": Auth::routes() (reset de contraseña) fallaba con
+        // "Password broker [usuarios] is not defined". Ambos apuntan al mismo
+        // proveedor (App\Models\Usuario), así que se conservan los dos nombres.
+        'usuarios' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,

@@ -37,6 +37,12 @@ use App\Http\Controllers\MensajeController;
 use App\Http\Controllers\DetalleRecetaController;
 use App\Http\Controllers\RecetaCompartidaController;
 use App\Http\Controllers\HistorialMedicoController;
+use App\Http\Controllers\PacienteEnfermedadController;
+use App\Http\Controllers\SignosVitalesController;
+use App\Http\Controllers\PacienteAlergiaController;
+use App\Http\Controllers\CodigoVerificacionController;
+use App\Http\Controllers\CuentaController;
+
 //------------AUTENTICACION (JWT)--------------------
 //publicas
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -49,6 +55,15 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout',[AuthController::class, 'logout']);
 });
 
+//------------VERIFICACION DE CORREO (OTP)--------------------
+Route::middleware(['auth:api'])->prefix('auth/verificacion')->group(function () {
+    Route::post('/enviar', [CodigoVerificacionController::class, 'enviar'])->middleware('throttle:3,1');
+    Route::post('/verificar', [CodigoVerificacionController::class, 'verificar'])->middleware('throttle:10,1');
+});
+
+
+//------------CUENTA DEL USUARIO--------------------
+Route::middleware(['auth:api', 'throttle:5,1'])->put('/auth/correo', [CuentaController::class, 'cambiarCorreo']);
 
 //------------SOLO ADMIN--------------------
 // USUARIOS (antes era publico, cualquiera podia crear admins o borrar usuarios)
@@ -59,8 +74,11 @@ Route::middleware(['auth:api', 'rol:admin'])->group(function (){
 
 
 //------------PACIENTES--------------------
-//el paciente consulta su propio perfil
-Route::middleware(['auth:api', 'rol:paciente'])->get('/mi-paciente', [PacienteController::class, 'miPerfil']);
+//el paciente consulta y actualiza su propio perfil
+Route::middleware(['auth:api', 'rol:paciente'])->group(function () {
+    Route::get('/mi-paciente', [PacienteController::class, 'miPerfil']);
+    Route::put('/mi-paciente', [PacienteController::class, 'actualizarMiPerfil']);
+});
 
 //listar: solo admin y medico
 Route::middleware(['auth:api', 'rol:admin,medico'])->get('/pacientes', [PacienteController::class, 'index']);
@@ -71,39 +89,54 @@ Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
     Route::put('/pacientes/{paciente}', [PacienteController::class, 'update']);
 });
 
-//ver uno: los tres roles (el controller se encarga de revisar que sea suyo si el rol es paciente)
+//ver uno: los tres roles (el controller revisa que sea suyo si el rol es paciente)
 Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->get('/pacientes/{paciente}', [PacienteController::class, 'show']);
 
 //eliminar: solo el admin
-Route::middleware(['auth:api', 'rol:admin'])->delete('/paciente/{paciente}', [PacienteController::class, 'destroy']);
+Route::middleware(['auth:api', 'rol:admin'])->delete('/pacientes/{paciente}', [PacienteController::class, 'destroy']);
 
+
+//------------ALERGIAS DEL PACIENTE--------------------
+//el paciente gestiona sus propias alergias
+Route::middleware(['auth:api', 'rol:paciente'])->group(function () {
+    Route::get('/mi-paciente/alergias', [PacienteAlergiaController::class, 'indexMias']);
+    Route::post('/mi-paciente/alergias', [PacienteAlergiaController::class, 'store']);
+    Route::put('/mi-paciente/alergias/{alergiaId}', [PacienteAlergiaController::class, 'update']);
+    Route::delete('/mi-paciente/alergias/{alergiaId}', [PacienteAlergiaController::class, 'destroy']);
+});
+
+//el medico y el admin solo consultan
+Route::middleware(['auth:api', 'rol:medico,admin'])
+    ->get('/pacientes/{paciente}/alergias', [PacienteAlergiaController::class, 'indexDe']);
 
 
 //------------MEDICOS--------------------
+//el medico consulta su propio perfil
+Route::middleware(['auth:api', 'rol:medico'])->get('/mi-medico', [MedicoController::class, 'miPerfil']);
 
-//EL MEDICO PUEDE CONSULTAR SU PROPIO PERFIL
-Route::middleware(['auth:api', 'rol:medico'])->get('mi-medico', [MedicoController::class, 'miPerfil']);
-
-//buscar y ver: cualquier usuario son sesion (el controler oculta los no verificados)
+//buscar y ver medicos
 Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
     Route::get('/medicos', [MedicoController::class, 'index']);
     Route::get('/medicos/{medico}', [MedicoController::class, 'show']);
 });
 
-//crear y actualizar: medico (el suyo) y admin (cualquiera)
-Route::middleware(['auth:api', 'rol:medico,admin'])->group(function () {
-    Route::post('/medicos', [MedicoController::class, 'store']);
-    Route::put('/medicos/{medico}', [MedicoController::class, 'update']);
-});
+//registrar un medico: SOLO admin
+Route::middleware(['auth:api', 'rol:admin'])->post('/medicos', [MedicoController::class, 'store']);
 
-//verificar y eliminar: solo el admin
+//Registrar un medico junto con su usuario(cuenta + perfil): SOLO ADMIN
+Route::middleware(['auth:api', 'rol:admin'])->post('/admin/medicos', [MedicoController::class, 'registrarConUsuario']);
+
+//actualizar: el propio medico o el admin
+Route::middleware(['auth:api', 'rol:medico,admin'])->put('/medicos/{medico}', [MedicoController::class, 'update']);
+
+//verificar y eliminar: solo admin
 Route::middleware(['auth:api', 'rol:admin'])->group(function () {
     Route::patch('/medicos/{medico}/verificar', [MedicoController::class, 'verificar']);
     Route::delete('/medicos/{medico}', [MedicoController::class, 'destroy']);
 });
 
-//------------SOLO GET--------------------
 
+//------------SOLO GET--------------------
 Route::get('/idiomas', [IdiomaController::class, 'index']);
 Route::get('/alergias', [AlergiaController::class, 'index']);
 Route::get('/enfermedades', [EnfermedadController::class, 'index']);
@@ -470,3 +503,29 @@ Route::middleware(['auth:api', 'rol:medico,admin'])->group(function () {
 //eliminar: solo admin
 Route::middleware(['auth:api', 'rol:admin'])
     ->delete('/historial_medico/{historial}', [HistorialMedicoController::class, 'destroy']);
+
+//------------PACIENTE - ENFERMEDADES--------------------
+//ver: los tres roles (el controller revisa que el paciente solo vea lo suyo)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])
+    ->get('/pacientes/{paciente}/enfermedades', [PacienteEnfermedadController::class, 'index']);
+
+//asignar, actualizar y quitar: paciente (el suyo) y admin
+Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
+    Route::post('/pacientes/{paciente}/enfermedades', [PacienteEnfermedadController::class, 'store']);
+    Route::put('/pacientes/{paciente}/enfermedades/{enfermedad}', [PacienteEnfermedadController::class, 'update']);
+    Route::delete('/pacientes/{paciente}/enfermedades/{enfermedad}', [PacienteEnfermedadController::class, 'destroy']);
+});
+
+//------------SIGNOS VITALES--------------------
+//ver y listar: los tres roles (el controller revisa que el paciente solo vea lo suyo)
+Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
+    Route::get('/pacientes/{paciente}/signos_vitales', [SignosVitalesController::class, 'index']);
+    Route::get('/signos_vitales/{signo}', [SignosVitalesController::class, 'show']);
+});
+
+//crear, actualizar y eliminar: paciente (los suyos) y admin
+Route::middleware(['auth:api', 'rol:paciente,admin'])->group(function () {
+    Route::post('/pacientes/{paciente}/signos_vitales', [SignosVitalesController::class, 'store']);
+    Route::put('/signos_vitales/{signo}', [SignosVitalesController::class, 'update']);
+    Route::delete('/signos_vitales/{signo}', [SignosVitalesController::class, 'destroy']);
+});
