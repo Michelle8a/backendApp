@@ -14,6 +14,7 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        // El panel admin ahora redirige la raíz a /home (routes/web.php).
+        $response->assertRedirect('/home');
     }
 }

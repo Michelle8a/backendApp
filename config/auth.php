@@ -105,6 +105,17 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // El panel web dejó el broker por defecto en "usuarios", pero solo
+        // existía "users": Auth::routes() (reset de contraseña) fallaba con
+        // "Password broker [usuarios] is not defined". Ambos apuntan al mismo
+        // proveedor (App\Models\Usuario), así que se conservan los dos nombres.
+        'usuarios' => [
+            'provider' => 'users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
     ],
 
     /*
