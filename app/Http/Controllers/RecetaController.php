@@ -71,8 +71,12 @@ class RecetaController extends Controller
             'per_page'    => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query = Receta::with(['paciente:id,nombres,apellidos', 'medico:id,nombres,apellidos'])
-            ->orderByDesc('created_at');
+        $query = Receta::with([
+        'paciente:id,nombres,apellidos',
+        'medico:id,nombres,apellidos',
+        'medico.especialidades:especialidades.id,especialidades.nombre',
+    ])
+    ->orderByDesc('created_at');
 
         if ($usuario->rol === 'paciente') {
             $paciente = $this->pacienteDe($usuario);
