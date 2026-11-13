@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Citas;
 use App\Models\Medico;
 use App\Models\Paciente;
+use App\Services\Notificador;
 use Carbon\Carbon;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
@@ -50,14 +51,14 @@ class CitasController extends Controller
 
         if ($usuario->rol === 'paciente') {
             $paciente = $this->pacienteDe($usuario);
-            if ($paciente && $paciente->id === $cita->paciente_id) {
+            if ($paciente && (int) $paciente->id === (int) $cita->paciente_id) {
                 return null;
             }
         }
 
         if ($usuario->rol === 'medico') {
             $medico = $this->medicoDe($usuario);
-            if ($medico && $medico->id === $cita->medico_id) {
+            if ($medico && (int) $medico->id === (int) $cita->medico_id) {
                 return null;
             }
         }
@@ -111,9 +112,55 @@ class CitasController extends Controller
     }
 
     // ------------------------------------------------------------------
+    // NOTIFICACIONES PUSH
+    // ------------------------------------------------------------------
+
+    private function cuando(Citas $cita): string
+    {
+        return Carbon::parse($cita->fecha_hora)->locale('es')->isoFormat('ddd D MMM, h:mm A');
+    }
+
+    /**
+     * $a = 'medico' o 'paciente': a quien se le avisa.
+     * Texto generico: se ve en la pantalla bloqueada.
+     */
+    private function avisar(Citas $cita, string $a, string $titulo, string $cuerpo): void
+    {
+        $usuarioId = $a === 'medico'
+            ? Medico::whereKey($cita->medico_id)->value('usuario_id')
+            : Paciente::whereKey($cita->paciente_id)->value('usuario_id');
+
+        if (! $usuarioId) {
+            return;
+        }
+
+        Notificador::notificar(
+            (int) $usuarioId,
+            'cita',
+            $titulo,
+            $cuerpo,
+            ['pantalla' => 'cita', 'cita_id' => $cita->id],
+            $cita->id
+        );
+    }
+
+    /** Avisa a la otra parte: el que cancela no se notifica a si mismo. */
+    private function avisarCancelacion(Citas $cita, $usuario): void
+    {
+        $texto = 'La cita del ' . $this->cuando($cita) . ' fue cancelada.';
+
+        if ($usuario->rol !== 'paciente') {
+            $this->avisar($cita, 'paciente', 'Cita cancelada', $texto);
+        }
+        if ($usuario->rol !== 'medico') {
+            $this->avisar($cita, 'medico', 'Cita cancelada', $texto);
+        }
+    }
+
+    // ------------------------------------------------------------------
     // GET /citas
     // admin: todas | medico: las suyas | paciente: las suyas
-    // Filtros: ?estado=pendiente&desde=2026-11-01&hasta=2026-11-30&per_page=15
+    // Filtros: ?estado=pendiente&desde=2026-11-01&hasta=2026-11-30&orden=asc&per_page=15
     // ------------------------------------------------------------------
     public function index(Request $request)
     {
@@ -123,6 +170,7 @@ class CitasController extends Controller
             'estado'   => ['nullable', Rule::in(['pendiente', 'confirmada', 'en_curso', 'cancelada', 'finalizada'])],
             'desde'    => 'nullable|date',
             'hasta'    => 'nullable|date|after_or_equal:desde',
+            'orden'    => ['nullable', Rule::in(['asc', 'desc'])],
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
@@ -148,7 +196,7 @@ class CitasController extends Controller
         $query->when($request->estado, fn ($q, $v) => $q->where('estado', $v))
               ->when($request->desde, fn ($q, $v) => $q->whereDate('fecha_hora', '>=', $v))
               ->when($request->hasta, fn ($q, $v) => $q->whereDate('fecha_hora', '<=', $v))
-              ->orderBy('fecha_hora', 'desc');
+              ->orderBy('fecha_hora', $request->input('orden', 'desc'));
 
         $citas = $query->paginate($request->integer('per_page', 15));
         $citas->through(fn ($c) => $this->transformar($c, $usuario, false));
@@ -203,6 +251,9 @@ class CitasController extends Controller
             'sala_video'            => 'cita-' . Str::uuid(), //se genera automaticamente
             'notas_medico_cifradas' => null,
         ]);
+
+        //aviso push al medico
+        $this->avisar($cita, 'medico', 'Nueva solicitud de cita', 'Tienes una cita por confirmar: ' . $this->cuando($cita));
 
         $cita->load(['paciente:id,nombres,apellidos', 'medico:id,nombres,apellidos,tarifa']);
 
@@ -286,7 +337,9 @@ class CitasController extends Controller
             }
         }
 
-        if (isset($datos['fecha_hora'])) {
+        $reprogramada = isset($datos['fecha_hora']);
+
+        if ($reprogramada) {
             $datos['fecha_hora'] = $inicio;
             $datos['estado'] = 'pendiente'; //al reprogramar, el medico debe volver a confirmar
         }
@@ -298,9 +351,16 @@ class CitasController extends Controller
 
         $cita->update($datos);
 
+        $actualizada = $cita->fresh();
+
+        //aviso push al medico si cambio la fecha
+        if ($reprogramada) {
+            $this->avisar($actualizada, 'medico', 'Cita reprogramada', 'Una cita cambió a ' . $this->cuando($actualizada));
+        }
+
         return response()->json([
             'mensaje' => 'Cita actualizada correctamente',
-            'data'    => $this->transformar($cita->fresh(), $usuario),
+            'data'    => $this->transformar($actualizada, $usuario),
         ]);
     }
 
@@ -327,6 +387,14 @@ class CitasController extends Controller
 
         $cita->update(['estado' => $datos['estado']]);
 
+        //avisos push segun el nuevo estado
+        if ($datos['estado'] === 'confirmada') {
+            $this->avisar($cita, 'paciente', 'Cita confirmada', 'Tu cita fue confirmada para el ' . $this->cuando($cita));
+        }
+        if ($datos['estado'] === 'cancelada') {
+            $this->avisarCancelacion($cita, $usuario);
+        }
+
         return response()->json([
             'mensaje' => "Cita {$datos['estado']}",
             'data'    => $this->transformar($cita->fresh(), $usuario),
@@ -349,6 +417,9 @@ class CitasController extends Controller
         }
 
         $cita->update(['estado' => 'cancelada']);
+
+        //aviso push a la otra parte
+        $this->avisarCancelacion($cita, $usuario);
 
         return response()->json([
             'mensaje' => 'Cita cancelada correctamente',

@@ -10,9 +10,11 @@ class Notificacion extends Model
 
     protected $fillable = [
         'usuario_id',
+        'cita_id',
         'tipo',
         'titulo',
         'cuerpo',
+        'datos',
         'leida',
         'programada_para',
         'enviada_en'
@@ -20,6 +22,7 @@ class Notificacion extends Model
 
     protected $casts = [
         'leida'           => 'boolean',
+        'datos'           => 'array',
         'programada_para' => 'datetime',
         'enviada_en'      => 'datetime',
     ];

@@ -174,7 +174,7 @@ Route::middleware('auth:api')->group(function () {
 });
 
 //crear: solo admin y medico lo mismo anterior, pero no se puede crear notificaciones para otros usuarios, solo para uno mismo
-Route::middleware(['auth:api', 'rol:admin,medico'])
+Route::middleware(['auth:api', 'rol:admin'])
     ->post('/notificaciones', [NotificacionController::class, 'store']);
 
 
