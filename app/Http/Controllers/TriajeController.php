@@ -10,6 +10,7 @@ use App\Models\Mensaje;
 use App\Models\Paciente;
 use App\Services\DisponibilidadService;
 use App\Services\GeminiService;
+use App\Services\Notificador;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -357,6 +358,19 @@ class TriajeController extends Controller
 
         if (! $cita) {
             return response()->json(['mensaje' => 'Ese horario ya no esta disponible, elige otro'], 409);
+        }
+
+                // Aviso push + bandeja al médico (mismo texto que en CitasController)
+        $medicoUsuarioId = Medico::whereKey($cita->medico_id)->value('usuario_id');
+        if ($medicoUsuarioId) {
+            Notificador::notificar(
+                (int) $medicoUsuarioId,
+                'cita',
+                'Nueva solicitud de cita',
+                'Tienes una cita por confirmar: ' . $inicio->copy()->locale('es')->isoFormat('ddd D MMM, h:mm A'),
+                ['pantalla' => 'cita', 'cita_id' => $cita->id],
+                $cita->id
+            );
         }
 
         return response()->json([
