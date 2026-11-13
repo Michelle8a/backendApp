@@ -5,6 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Conversacion;
 use App\Models\Mensaje;
 use App\Models\BitacoraAuditoria;
+use App\Models\Medico;
+use App\Models\Paciente;
+use App\Models\Notificacion;
+use App\Services\Notificador;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -17,6 +23,61 @@ class MensajeController extends Controller
     private function esParticipante(Conversacion $conversacion, int $usuarioId): bool
     {
         return $conversacion->participantes()->where('usuarios.id', $usuarioId)->exists();
+    }
+
+        /** Nombre para mostrar en el aviso (médico o paciente; si no, "Nuevo mensaje"). */
+    private function nombreDe(int $usuarioId): string
+    {
+        $persona = Medico::where('usuario_id', $usuarioId)->first()
+            ?? Paciente::where('usuario_id', $usuarioId)->first();
+
+        $nombre = $persona ? trim(($persona->nombres ?? '') . ' ' . ($persona->apellidos ?? '')) : '';
+
+        return $nombre !== '' ? $nombre : 'Nuevo mensaje';
+    }
+
+    /** Avisa a los demás participantes. Nunca debe romper el envío del mensaje. */
+    private function avisarMensaje(Conversacion $conversacion, int $emisorId, array $datos): void
+    {
+        try {
+            $titulo = $this->nombreDe($emisorId);
+            $cuerpo = $datos['tipo'] === 'texto'
+                ? Str::limit($datos['contenido'], 80)
+                : ($datos['tipo'] === 'imagen' ? '📷 Imagen' : '📎 Archivo');
+
+            $destinatarios = $conversacion->participantes()
+                ->where('usuarios.id', '!=', $emisorId)
+                ->pluck('usuarios.id');
+
+            foreach ($destinatarios as $uid) {
+                // un solo aviso sin leer por conversación
+                Notificacion::where('usuario_id', $uid)
+                    ->where('tipo', 'mensaje')
+                    ->where('leida', false)
+                    ->where('datos->conversacion_id', $conversacion->id)
+                    ->delete();
+
+                Notificador::notificar(
+                    $uid,
+                    'mensaje',
+                    $titulo,
+                    $cuerpo,
+                    ['pantalla' => 'chat', 'conversacion_id' => $conversacion->id]
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo avisar del mensaje: ' . $e->getMessage());
+        }
+    }
+
+    /** Al leer el chat, el aviso de esa conversación también queda leído. */
+    private function marcarAvisoLeido(int $usuarioId, int $conversacionId): void
+    {
+        Notificacion::where('usuario_id', $usuarioId)
+            ->where('tipo', 'mensaje')
+            ->where('leida', false)
+            ->where('datos->conversacion_id', $conversacionId)
+            ->update(['leida' => true]);
     }
 
     /**
@@ -108,6 +169,8 @@ class MensajeController extends Controller
             'enviado_en'        => now(),
         ]);
 
+        $this->avisarMensaje($conversacion, $usuario->id, $datos);
+
         return response()->json([
             'mensaje'      => 'Mensaje enviado correctamente',
             'mensaje_chat' => $this->formatear($mensaje),
@@ -144,6 +207,8 @@ class MensajeController extends Controller
 
         $mensaje->update(['leido' => true]);
 
+        $this->marcarAvisoLeido($usuario->id, $mensaje->conversacion_id);
+
         return response()->json(['mensaje' => 'Mensaje marcado como leido']);
     }
 
@@ -164,12 +229,15 @@ class MensajeController extends Controller
             ->where('leido', false)
             ->update(['leido' => true]);
 
+        $this->marcarAvisoLeido($usuario->id, $conversacion->id);
+
         return response()->json([
             'mensaje'      => 'Mensajes marcados como leidos',
             'actualizados' => $actualizados,
         ]);
     }
 
+    
     /**
      * DELETE /mensajes/{mensaje}  (solo admin, moderacion; lo controla la ruta)
      */
