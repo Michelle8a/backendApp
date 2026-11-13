@@ -6,10 +6,13 @@ use App\Models\Citas;
 use App\Models\Medico;
 use App\Models\Paciente;
 use App\Services\Notificador;
+use App\Models\Conversacion;
 use Carbon\Carbon;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -144,6 +147,31 @@ class CitasController extends Controller
         );
     }
 
+        /** Crea el chat de la cita con paciente y médico. Si ya existe, no hace nada. */
+    private function crearConversacion(Citas $cita): void
+    {
+        try {
+            if (Conversacion::where('cita_id', $cita->id)->exists()) {
+                return;
+            }
+
+            $usuarios = array_filter([
+                Paciente::whereKey($cita->paciente_id)->value('usuario_id'),
+                Medico::whereKey($cita->medico_id)->value('usuario_id'),
+            ]);
+
+            DB::transaction(function () use ($cita, $usuarios) {
+                $c = Conversacion::create([
+                    'cita_id'   => $cita->id,
+                    'creado_en' => now(),
+                ]);
+                $c->participantes()->attach($usuarios);
+            });
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo crear la conversacion de la cita: ' . $e->getMessage());
+        }
+    }
+
     /** Avisa a la otra parte: el que cancela no se notifica a si mismo. */
     private function avisarCancelacion(Citas $cita, $usuario): void
     {
@@ -251,6 +279,8 @@ class CitasController extends Controller
             'sala_video'            => 'cita-' . Str::uuid(), //se genera automaticamente
             'notas_medico_cifradas' => null,
         ]);
+
+        $this->crearConversacion($cita);
 
         //aviso push al medico
         $this->avisar($cita, 'medico', 'Nueva solicitud de cita', 'Tienes una cita por confirmar: ' . $this->cuando($cita));
