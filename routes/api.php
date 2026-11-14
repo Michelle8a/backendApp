@@ -44,18 +44,24 @@ use App\Http\Controllers\CodigoVerificacionController;
 use App\Http\Controllers\CuentaController;
 use App\Http\Controllers\TriajeController;
 use Illuminate\Routing\Middleware\ValidateSignature;
+use App\Http\Controllers\RecuperarContrasenaController;
 use App\Http\Controllers\MedicoDisponibilidadController;
 
 //------------AUTENTICACION (JWT)--------------------
 //publicas
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+//recuperar contrasena (codigo por correo)
+Route::post('/password/olvide', [RecuperarContrasenaController::class, 'olvide'])->middleware('throttle:3,1');
+Route::post('/password/restablecer', [RecuperarContrasenaController::class, 'restablecer'])->middleware('throttle:10,1');
+
+//refresh: FUERA de auth:api (el token puede estar vencido; el controlador valida el token por su cuenta)
+Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('throttle:30,1');
 
 //requiere token
 Route::middleware('auth:api')->group(function () {
     Route::get('/auth/perfil', [AuthController::class, 'perfil']);
-    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
-    Route::post('/auth/logout',[AuthController::class, 'logout']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 });
 
 //------------VERIFICACION DE CORREO (OTP)--------------------

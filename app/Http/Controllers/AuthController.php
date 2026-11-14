@@ -6,6 +6,7 @@ use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use App\Models\BitacoraAuditoria;
 
 
@@ -73,21 +74,31 @@ class AuthController extends Controller
 
     //POST /api/auth/refresh
     public function refresh()
-    {
+{
+    try {
+        // Renueva el token y pone el anterior en la lista negra
         $token = Auth::guard('api')->refresh();
-
-        return $this->respuestaToken($token, Auth::guard('api')->user());
+    } catch (JWTException $e) {
+        // Expirado más allá de refresh_ttl, en lista negra o sin token
+        return response()->json(['mensaje' => 'Sesion expirada'], 401);
     }
+
+    return response()->json([
+        'access_token' => $token,
+        'token_type'   => 'bearer',
+        'expire_in'    => Auth::guard('api')->factory()->getTTL() * 60,
+    ], 200);
+}
 
     //POST logout (invalida el token)
-    public function logout(Request $request)
-    {
-        Auth::guard('api')->logout();
+public function logout(Request $request)
+{
+    $id = Auth::guard('api')->id();
+    Auth::guard('api')->logout();
+    BitacoraAuditoria::registrar('logout', 'usuario', $id, $id);
 
-        BitacoraAuditoria::registrar('logout', 'usuario', Auth::guard('api')->id());
-
-        return response()->json(['mensaje' => 'Sesion cerrada'], 200);
-    }
+    return response()->json(['mensaje' => 'Sesion cerrada'], 200);
+}
 
     private function respuestaToken(string $token, Usuario $usuario, int $codigo = 200)
     {
