@@ -39,7 +39,7 @@ class ComentarioForoWebController extends Controller
     {
         $query = ComentariosForo::with([
                 'autor:id,correo,rol,estado',
-                'autor.paciente:id,usuario_id,nombres',
+                'autor.paciente:id,usuario_id,nombres,apellidos',
                 'autor.medico:id,usuario_id,nombres,apellidos',
                 'publicacion:id,titulo,autor_id,categoria_id,anonimo,oculta',
                 'publicacion.categoria_foro:id,nombre',
@@ -84,7 +84,7 @@ class ComentarioForoWebController extends Controller
                 'medico'   => $a->medico
                                 ? trim("Dr(a). {$a->medico->nombres} {$a->medico->apellidos}")
                                 : null,
-                'paciente' => $a->paciente->nombres ?? null,
+                'paciente' => trim(($a->paciente?->nombres ?? '').' '.($a->paciente?->apellidos ?? '')) ?: null,
                 'admin'    => 'Administrador',
                 default    => null,
             };

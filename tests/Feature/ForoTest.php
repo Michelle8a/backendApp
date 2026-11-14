@@ -3,9 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\CategoriaForo;
+use App\Models\CentroSalud;
+use App\Models\Idioma;
+use App\Models\Medico;
+use App\Models\Paciente;
 use App\Models\PublicacionForo;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -47,6 +52,47 @@ class ForoTest extends TestCase
             'anonimo' => false,
             'creado_en' => now(),
         ], $extra));
+    }
+
+    // Perfil de paciente con nombres y apellidos (para probar el nombre del autor).
+    private function perfilPaciente(Usuario $u, string $nombres = 'Ana', string $apellidos = 'Perez'): Paciente
+    {
+        $idioma = Idioma::firstOrCreate(['nombre' => 'Español'], ['codigo' => 'es']);
+
+        return Paciente::create([
+            'usuario_id' => $u->id,
+            'idioma_id' => $idioma->id,
+            'nombres' => $nombres,
+            'apellidos' => $apellidos,
+            'dui_cifrado' => Crypt::encryptString('00000000-0'),
+            'fecha_nacimiento' => '1990-01-01',
+            'sexo' => 'F',
+            'tipo_sangre' => 'O+',
+            'direccion' => 'San Salvador',
+            'latitud' => 13.6989,
+            'longitud' => -89.1914,
+        ]);
+    }
+
+    // Perfil de médico con nombres y apellidos.
+    private function perfilMedico(Usuario $u, string $nombres = 'Luis', string $apellidos = 'Gomez'): Medico
+    {
+        $centro = CentroSalud::create([
+            'nombre' => 'Hospital de prueba',
+            'tipo' => 'hospital',
+            'direccion' => 'San Salvador',
+            'latitud' => 13.6989,
+            'longitud' => -89.1914,
+            'telefono' => '2222-0000',
+        ]);
+
+        return Medico::create([
+            'usuario_id' => $u->id,
+            'centro_salud_id' => $centro->id,
+            'jvpm' => 'JVPM-123',
+            'nombres' => $nombres,
+            'apellidos' => $apellidos,
+        ]);
     }
 
     // ------------------------------------------------------------------
@@ -123,6 +169,73 @@ class ForoTest extends TestCase
         $this->getJson("/api/foro/publicaciones/{$id}")
             ->assertOk()
             ->assertJsonPath('autor.id', $autor->id); // admin sí lo ve
+    }
+
+    public function test_al_publicar_sin_el_campo_anonimo_se_muestra_el_autor(): void
+    {
+        $cat = $this->categoria();
+        $autor = $this->usuario('paciente', 'ana@test.com');
+        $this->perfilPaciente($autor, 'Ana', 'Perez');
+
+        $this->actingAs($autor, 'api');
+
+        // Sin "anonimo" en el body: la columna tiene default(true) por legado,
+        // pero la API debe crear la publicación con el autor visible.
+        $r = $this->postJson('/api/foro/publicaciones', [
+            'categoria_id' => $cat->id,
+            'titulo' => 'Mi experiencia',
+            'contenido' => 'Contenido de apoyo',
+        ])->assertCreated();
+
+        $this->assertFalse((bool) $r->json('anonimo'));
+        $r->assertJsonPath('autor.nombre', 'Ana Perez');
+    }
+
+    public function test_el_nombre_real_se_muestra_en_publicaciones_y_comentarios(): void
+    {
+        $cat = $this->categoria();
+
+        $paciente = $this->usuario('paciente', 'ana@test.com');
+        $this->perfilPaciente($paciente, 'Ana', 'Perez');
+
+        $medico = $this->usuario('medico', 'luis@test.com');
+        $this->perfilMedico($medico, 'Luis', 'Gomez');
+
+        // Publicación de paciente: nombre y apellidos, sin "Dr(a)."
+        $this->actingAs($paciente, 'api');
+        $pub = $this->postJson('/api/foro/publicaciones', [
+            'categoria_id' => $cat->id,
+            'titulo' => 'De paciente',
+            'contenido' => 'Hola',
+            'anonimo' => false,
+        ])->assertCreated();
+        $pub->assertJsonPath('autor.nombre', 'Ana Perez');
+
+        $com = $this->postJson("/api/foro/publicaciones/{$pub->json('id')}/comentarios", [
+            'contenido' => 'Comentario de paciente',
+        ])->assertCreated();
+        $com->assertJsonPath('data.autor.nombre', 'Ana Perez');
+
+        // Publicación y comentario de médico: conserva el "Dr(a)."
+        $this->actingAs($medico, 'api');
+        $pubM = $this->postJson('/api/foro/publicaciones', [
+            'categoria_id' => $cat->id,
+            'titulo' => 'De medico',
+            'contenido' => 'Hola',
+            'anonimo' => false,
+        ])->assertCreated();
+        $pubM->assertJsonPath('autor.nombre', 'Dr(a). Luis Gomez');
+
+        $comM = $this->postJson("/api/foro/publicaciones/{$pubM->json('id')}/comentarios", [
+            'contenido' => 'Comentario de medico',
+        ])->assertCreated();
+        $comM->assertJsonPath('data.autor.nombre', 'Dr(a). Luis Gomez');
+
+        // En el listado también viaja el nombre.
+        $this->getJson('/api/foro/publicaciones')
+            ->assertOk()
+            ->assertJsonFragment(['nombre' => 'Ana Perez'])
+            ->assertJsonFragment(['nombre' => 'Dr(a). Luis Gomez']);
     }
 
     public function test_validacion_al_crear_una_publicacion(): void

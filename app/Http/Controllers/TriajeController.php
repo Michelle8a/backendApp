@@ -138,7 +138,7 @@ class TriajeController extends Controller
             ->first();
 
         if ($existente) {
-            return response()->json(['conversacion_id' => $existente->id], 200);
+            return response()->json(['conversacion_id' => $existente->id, 'opciones' => []], 200);
         }
 
         $conversacion = DB::transaction(function () use ($paciente, $usuario) {
@@ -159,7 +159,11 @@ class TriajeController extends Controller
             return $c;
         });
 
-        return response()->json(['conversacion_id' => $conversacion->id], 201);
+        return response()->json([
+            'conversacion_id' => $conversacion->id,
+            // Botones para el saludo inicial (el resto de turnos los genera Gemini)
+            'opciones'        => ['Dolor o malestar', 'Chequeo general', 'Seguimiento', 'Resultados'],
+        ], 201);
     }
 
     /** POST /triaje/{conversacion}/mensajes {contenido} */
@@ -200,6 +204,7 @@ class TriajeController extends Controller
                 'urgencia_alta'    => true,
                 'medicos'          => [],
                 'especialidad_id'  => null,
+                'opciones'         => [],
             ]);
         }
 
@@ -246,6 +251,7 @@ class TriajeController extends Controller
             'urgencia_alta'    => $ia['urgencia_alta'],
             'medicos'          => [],
             'especialidad_id'  => null,
+            'opciones'         => $ia['opciones'] ?? [],
         ];
 
         // 5. cierre de la admision

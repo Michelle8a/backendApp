@@ -8,6 +8,26 @@ use App\Models\Usuario;
 
 class PublicacionForoController extends Controller
 {
+    //-------- helper: nombre real del autor según su rol --------
+    // Igual que en los comentarios: médicos con "Dr(a)." y pacientes con
+    // nombres y apellidos. Si el perfil no existe se usa una etiqueta genérica.
+    private function nombreMostrado(?Usuario $u): string
+    {
+        if (! $u) {
+            return 'Usuario';
+        }
+
+        return match ($u->rol) {
+            'medico'   => $u->medico
+                            ? trim("Dr(a). {$u->medico->nombres} {$u->medico->apellidos}")
+                            : 'Médico',
+            'paciente' => trim(($u->paciente?->nombres ?? '').' '.($u->paciente?->apellidos ?? ''))
+                            ?: 'Paciente',
+            'admin'    => 'Administrador',
+            default    => 'Usuario',
+        };
+    }
+
     //-------- helper: arma la respuesta y respeta el anonimato --------
     private function formatear(PublicacionForo $p, Usuario $user): array
     {
@@ -23,7 +43,11 @@ class PublicacionForoController extends Controller
             'creado_en'   => $p->creado_en,
             'categoria'   => $p->categoria_foro?->only(['id', 'nombre']),
             'autor'       => $puedeVerAutor && $p->usuario
-                                ? $p->usuario->only(['id', 'rol'])
+                                ? [
+                                    'id'     => $p->usuario->id,
+                                    'rol'    => $p->usuario->rol,
+                                    'nombre' => $this->nombreMostrado($p->usuario),
+                                ]
                                 : null,
             'es_mia'      => $esDueno,
             'comentarios_count' => $p->comentarios_count ?? null,
@@ -42,7 +66,12 @@ class PublicacionForoController extends Controller
     //moderacion: las publicaciones ocultas solo las ve el admin
     private function consulta(Usuario $user)
     {
-        return PublicacionForo::with(['usuario:id,rol', 'categoria_foro:id,nombre'])
+        return PublicacionForo::with([
+                'usuario:id,rol',
+                'usuario.paciente:id,usuario_id,nombres,apellidos',
+                'usuario.medico:id,usuario_id,nombres,apellidos',
+                'categoria_foro:id,nombre',
+            ])
             ->withCount(['comentarios', 'me_gusta'])
             ->withExists(['me_gusta as le_gusta' => fn ($q) => $q->where('usuarios.id', $user->id)])
             ->when(! $user->tieneRol('admin'), fn ($q) => $q->where('oculta', false));
@@ -108,6 +137,11 @@ class PublicacionForoController extends Controller
         // el autor SIEMPRE sale del token, nunca del body
         $datos['autor_id'] = $user->id;
 
+        // La columna en la BD tiene default(true) por legado. Aquí se fuerza a
+        // false cuando el cliente no manda el campo: publicar debe mostrar el
+        // nombre del autor salvo que pida explícitamente el anonimato.
+        $datos['anonimo'] = $request->boolean('anonimo');
+
         $p = PublicacionForo::create($datos);
         $p = $this->consulta($user)->findOrFail($p->id);
 
@@ -130,6 +164,10 @@ class PublicacionForoController extends Controller
             'contenido'    => 'sometimes|string',
             'anonimo'      => 'sometimes|boolean',
         ]);
+
+        if (array_key_exists('anonimo', $datos)) {
+            $datos['anonimo'] = $request->boolean('anonimo');
+        }
 
         $publicacion->update($datos);
         $p = $this->consulta($user)->findOrFail($publicacion->id);

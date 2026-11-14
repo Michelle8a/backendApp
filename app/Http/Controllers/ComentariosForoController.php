@@ -11,7 +11,7 @@ class ComentariosForoController extends Controller
     // Relaciones que se cargan para poder armar el nombre del autor
     private const CON = [
         'autor:id,rol',
-        'autor.paciente:id,usuario_id,nombres',
+        'autor.paciente:id,usuario_id,nombres,apellidos',
         'autor.medico:id,usuario_id,nombres,apellidos',
         'publicacion:id,autor_id,anonimo,oculta',
     ];
@@ -38,8 +38,9 @@ class ComentariosForoController extends Controller
             $nombre = match ($autor?->rol) {
                 'medico'   => $autor->medico
                                 ? trim("Dr(a). {$autor->medico->nombres} {$autor->medico->apellidos}")
-                                : 'Medico',
-                'paciente' => $autor->paciente->nombres ?? 'Paciente',
+                                : 'Médico',
+                'paciente' => trim(($autor->paciente?->nombres ?? '').' '.($autor->paciente?->apellidos ?? ''))
+                                ?: 'Paciente',
                 'admin'    => 'Administrador',
                 default    => 'Usuario',
             };
