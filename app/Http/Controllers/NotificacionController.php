@@ -12,13 +12,13 @@ class NotificacionController extends Controller
     /**
      * GET /notificaciones
      * Lista las notificaciones YA ENVIADAS del usuario autenticado.
-     * Filtros opcionales: ?leida=0|1  &tipo=mensaje|recordatorio_cita|receta  &per_page=15
+     * Filtros opcionales: ?leida=0|1  &tipo=mensaje|recordatorio_cita|receta|cita  &per_page=15
      */
     public function index(Request $request): JsonResponse
     {
         $filtros = $request->validate([
             'leida'    => ['sometimes', 'boolean'],
-            'tipo'     => ['sometimes', 'in:mensaje,recordatorio_cita,receta'],
+            'tipo'     => ['sometimes', 'in:mensaje,recordatorio_cita,receta,cita'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -55,7 +55,7 @@ class NotificacionController extends Controller
     }
 
     /**
-     * POST /notificaciones   (solo admin y médico)
+     * POST /notificaciones   (solo admin)
      * Crea una notificación para un usuario.
      * Sin programada_para -> se considera enviada ahora.
      * Con programada_para -> queda pendiente (enviada_en = null) hasta que
@@ -65,7 +65,7 @@ class NotificacionController extends Controller
     {
         $datos = $request->validate([
             'usuario_id'      => ['required', 'integer', 'exists:usuarios,id'],
-            'tipo'            => ['required', 'in:mensaje,recordatorio_cita,receta'],
+            'tipo'            => ['required', 'in:mensaje,recordatorio_cita,receta,cita'],
             'titulo'          => ['required', 'string', 'max:150'],
             'cuerpo'          => ['required', 'string'],
             'programada_para' => ['nullable', 'date', 'after_or_equal:now'],
@@ -119,8 +119,8 @@ class NotificacionController extends Controller
     }
 
     /**
-     * Si la notificación es de otro usuario dice 404 ,
-     * para no revelar que ese id existe osea que le importa si no es su id va
+     * Si la notificación es de otro usuario dice 404,
+     * para no revelar que ese id existe.
      */
     private function verificarDueno(Request $request, Notificacion $notificacion): void
     {

@@ -28,7 +28,10 @@ class ConversacionController extends Controller
             });
         }
 
-        return response()->json($query->paginate(15));
+        $pagina = $query->paginate(15);
+        $pagina->through(fn ($c) => $this->conDatosChat($c, $usuario));
+
+        return response()->json($pagina);
     }
 
     /**
@@ -77,7 +80,7 @@ class ConversacionController extends Controller
         });
 
         return response()->json(
-            $conversacion->load(['cita', 'participantes']),
+            $this->conDatosChat($conversacion->load(['cita', 'participantes']), $usuario),
             201
         );
     }
@@ -92,9 +95,9 @@ class ConversacionController extends Controller
             return response()->json(['mensaje' => 'No tienes acceso a esta conversacion'], 403);
         }
 
-        return response()->json(
-            $conversacion->load(['cita', 'participantes'])->loadCount('mensajes')
-        );
+        $conversacion->load(['cita', 'participantes'])->loadCount('mensajes');
+
+        return response()->json($this->conDatosChat($conversacion, $request->user()));
     }
 
     /**
@@ -113,9 +116,9 @@ class ConversacionController extends Controller
             return response()->json(['mensaje' => 'No tienes acceso a esta conversacion'], 403);
         }
 
-        return response()->json(
-            $conversacion->load(['cita', 'participantes'])->loadCount('mensajes')
-        );
+        $conversacion->load(['cita', 'participantes'])->loadCount('mensajes');
+
+        return response()->json($this->conDatosChat($conversacion, $request->user()));
     }
 
     /**
@@ -149,5 +152,44 @@ class ConversacionController extends Controller
         return $conversacion->participantes()
             ->wherePivot('usuario_id', $usuario->id)
             ->exists();
+    }
+
+    /**
+     * Agrega a la conversación lo que la app necesita para pintar el chat:
+     * estado (abierto/cerrado...), horas de apertura y cierre, y si se puede reprogramar.
+     * Las conversaciones de triaje (sin cita) siempre están abiertas.
+     */
+    private function conDatosChat(Conversacion $conversacion, $usuario): array
+    {
+        $data = $conversacion->toArray();
+        $cita = $conversacion->cita;
+
+        if (! $cita) {
+            $data['estado_chat']       = 'abierto';
+            $data['apertura_chat']     = null;
+            $data['tope_chat']         = null;
+            $data['fin_programado']    = null;
+            $data['cita_estado']       = null;
+            $data['puede_reprogramar'] = false;
+            return $data;
+        }
+
+        $data['estado_chat']    = $cita->estadoChat();
+        $data['apertura_chat']  = $cita->aperturaChat()->toIso8601String();
+        $data['tope_chat']      = $cita->topeChat()->toIso8601String();
+        $data['fin_programado'] = $cita->fecha_hora->copy()->addMinutes($cita->duracion_min)->toIso8601String();
+        $data['cita_estado']    = $cita->estado;
+
+        $puedeReprogramar = false;
+        if ($usuario->rol === 'paciente') {
+            $elOtroCancelo = $cita->estado === 'cancelada'
+                && (int) $cita->cancelada_por !== (int) $usuario->id;
+
+            $puedeReprogramar = ($elOtroCancelo || $cita->estado === 'no_asistio')
+                && ! Citas::where('reprogramada_de', $cita->id)->exists();
+        }
+        $data['puede_reprogramar'] = $puedeReprogramar;
+
+        return $data;
     }
 }

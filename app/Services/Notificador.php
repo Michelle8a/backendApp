@@ -9,7 +9,8 @@ class Notificador
 {
     /**
      * Guarda la notificación en la bandeja y manda el push al terminar de
-     * responder la petición. Si algo falla, solo se registra en el log.
+     * responder la petición. Nunca rompe la petición: si algo falla, queda en el log
+     * con el usuario y el tipo para poder rastrearlo.
      */
     public static function notificar(
         int $usuarioId,
@@ -31,17 +32,22 @@ class Notificador
                 'programada_para' => null,
                 'enviada_en'      => now(),
             ]);
-
-            $carga = $datos + ['notificacion_id' => $notificacion->id, 'tipo' => $tipo];
-
-            app()->terminating(function () use ($usuarioId, $titulo, $cuerpo, $carga) {
-                app(PushService::class)->enviarAUsuario($usuarioId, $titulo, $cuerpo, $carga);
-            });
-
-            return $notificacion;
         } catch (\Throwable $e) {
-            Log::warning('No se pudo crear la notificación: ' . $e->getMessage());
+            Log::error("Notificador: no se guardó la notificación (usuario {$usuarioId}, tipo '{$tipo}'): " . $e->getMessage());
             return null;
         }
+
+        $carga = $datos + ['notificacion_id' => $notificacion->id, 'tipo' => $tipo];
+
+        // El push va aparte: si falla, la notificación ya quedó en la bandeja
+        app()->terminating(function () use ($usuarioId, $titulo, $cuerpo, $carga) {
+            try {
+                app(PushService::class)->enviarAUsuario($usuarioId, $titulo, $cuerpo, $carga);
+            } catch (\Throwable $e) {
+                Log::error("Notificador: falló el push al usuario {$usuarioId}: " . $e->getMessage());
+            }
+        });
+
+        return $notificacion;
     }
 }

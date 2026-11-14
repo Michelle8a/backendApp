@@ -25,7 +25,7 @@ class MensajeController extends Controller
         return $conversacion->participantes()->where('usuarios.id', $usuarioId)->exists();
     }
 
-        /** Nombre para mostrar en el aviso (médico o paciente; si no, "Nuevo mensaje"). */
+    /** Nombre para mostrar en el aviso (médico o paciente; si no, "Nuevo mensaje"). */
     private function nombreDe(int $usuarioId): string
     {
         $persona = Medico::where('usuario_id', $usuarioId)->first()
@@ -108,6 +108,7 @@ class MensajeController extends Controller
 
     /**
      * GET /conversaciones/{conversacion}/mensajes?antes_de=120&per_page=30
+     * Leer siempre se permite (los chats cerrados quedan en solo lectura).
      */
     public function index(Request $request, Conversacion $conversacion)
     {
@@ -139,8 +140,8 @@ class MensajeController extends Controller
 
     /**
      * POST /conversaciones/{conversacion}/mensajes
-     * paciente y medico, solo si participan en la conversacion.
-     * El tipo 'bot' lo genera el sistema, no se acepta desde la app.
+     * paciente y medico, solo si participan en la conversacion Y el chat de la cita esta abierto.
+     * El tipo 'bot' y 'sistema' los genera el servidor, no se aceptan desde la app.
      */
     public function store(Request $request, Conversacion $conversacion)
     {
@@ -148,6 +149,20 @@ class MensajeController extends Controller
 
         if (! $this->esParticipante($conversacion, $usuario->id)) {
             return response()->json(['mensaje' => 'No participas en esta conversacion'], 403);
+        }
+
+        // El chat de una cita solo acepta mensajes dentro de su ventana (la regla vive aqui, no solo en la app)
+        $conversacion->loadMissing('cita');
+
+        if ($conversacion->cita && $conversacion->tipo !== 'triaje') {
+            $estadoChat = $conversacion->cita->estadoChat();
+
+            if ($estadoChat !== 'abierto') {
+                return response()->json([
+                    'mensaje'     => 'El chat de esta cita no esta disponible',
+                    'estado_chat' => $estadoChat,
+                ], 423);
+            }
         }
 
         $datos = $request->validate([
@@ -237,7 +252,6 @@ class MensajeController extends Controller
         ]);
     }
 
-    
     /**
      * DELETE /mensajes/{mensaje}  (solo admin, moderacion; lo controla la ruta)
      */

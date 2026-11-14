@@ -294,6 +294,10 @@ Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () 
 
     //cancelar: cada rol sobre sus propias citas
     Route::patch('/citas/{cita}/cancelar', [CitasController::class, 'cancelar']);
+
+    // reprogramar tras cancelacion del medico o inasistencia: solo paciente
+    Route::middleware(['auth:api', 'rol:paciente'])
+    ->post('/citas/{cita}/reprogramar', [CitasController::class, 'reprogramar']);
 });
 
 //crear: paciente (para si mismo) y admin (para cualquier paciente)

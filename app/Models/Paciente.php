@@ -76,4 +76,5 @@ class Paciente extends Model
     public function archivosAdjuntos(){
         return $this->hasMany(ArchivosAdjuntos::class, 'paciente_id');
     }
+
 }
