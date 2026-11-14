@@ -9,6 +9,7 @@ use App\Models\Especialidad;
 use App\Models\Idioma;
 use App\Models\Medico;
 use App\Models\Usuario;
+use App\Services\Notificador;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -200,6 +201,8 @@ class MedicoAdminController extends Controller
             'idiomas.*'        => 'integer|exists:idiomas,id',
         ]);
 
+        $estabaVerificado = (bool) $medico->verificado;
+
         DB::transaction(function () use ($datos, $medico) {
             $telefono       = $datos['telefono'] ?? null;
             $especialidades = $datos['especialidades'] ?? [];
@@ -214,16 +217,41 @@ class MedicoAdminController extends Controller
 
         BitacoraAuditoria::registrar('actualizar', 'medico', $medico->id);
 
+        if (! $estabaVerificado && (bool) $medico->fresh()->verificado) {
+            $this->avisarVerificacion($medico);
+        }
+
         return redirect()->route('medico.index')->with('ok', 'Médico actualizado correctamente.');
     }
 
     /* ---------- VERIFICAR / QUITAR VERIFICACION (AJAX) ---------- */
-    public function verificar(Medico $medico)
+        public function verificar(Medico $medico)
     {
         $medico->forceFill(['verificado' => ! $medico->verificado])->save();
         BitacoraAuditoria::registrar('actualizar', 'medico', $medico->id);
 
+        // Solo avisa al pasar a verificado, no al quitar la verificación
+        if ($medico->verificado) {
+            $this->avisarVerificacion($medico);
+        }
+
         return response()->json(['res' => true, 'verificado' => $medico->verificado]);
+    }
+
+        /** Avisa al médico (push + bandeja) que ya fue verificado. Nunca rompe la acción del admin. */
+    private function avisarVerificacion(Medico $medico): void
+    {
+        if (! $medico->usuario_id) {
+            return;
+        }
+
+        Notificador::notificar(
+            (int) $medico->usuario_id,
+            'verificacion',
+            'Cuenta verificada',
+            'Tu perfil fue verificado. Ya puedes recibir citas de pacientes.',
+            ['pantalla' => 'perfil']
+        );
     }
 
     /* ---------- ELIMINAR (AJAX) ---------- */
