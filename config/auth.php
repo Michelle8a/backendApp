@@ -17,7 +17,8 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'api'),
+        // El panel web (Blade) usa sesion con el guard "web"; la API usa "api" explicito
+        'guard' => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'usuarios'),
     ],
 

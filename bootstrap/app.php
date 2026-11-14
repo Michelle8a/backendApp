@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'rol' => \App\Http\Middleware\VerificarRol::class,
         ]);
 
+        // Render termina detras de un proxy: se debe confiar en X-Forwarded-* para
+        // que el host/protocolo de la request se resuelvan bien en produccion.
+        $middleware->trustProxies(at: '*');
+
         //API sin pantalla de login: no redirige DE MOMENTO, responde un 401
         $middleware->redirectGuestsTo(fn () => null);
     })
