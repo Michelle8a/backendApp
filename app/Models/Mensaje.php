@@ -15,6 +15,7 @@ class Mensaje extends Model
         'contenido_cifrado',
         'adjunto_url',
         'leido',
+        'enviado_en',
     ];
 
     protected $casts = [

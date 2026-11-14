@@ -7,9 +7,14 @@ use App\Models\Paciente;
 use App\Models\Medico;
 use App\Models\Citas;
 use App\Models\BitacoraAuditoria;
+use App\Services\Notificador;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+
+//RECETAS PDF
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class RecetaController extends Controller
 {
@@ -109,7 +114,7 @@ class RecetaController extends Controller
      * POST /recetas
      * medico: el medico_id se toma de su sesion | admin: debe enviar medico_id
      */
-    public function store(Request $request)
+        public function store(Request $request)
     {
         $usuario = $request->user();
 
@@ -118,9 +123,19 @@ class RecetaController extends Controller
             'medico_id'     => [$usuario->rol === 'admin' ? 'required' : 'prohibited', 'integer', 'exists:medicos,id'],
             'cita_id'       => ['required', 'integer', 'exists:citas,id', Rule::unique('recetas', 'cita_id')],
             'estado'        => ['nullable', Rule::in(self::ESTADOS)],
-            'firma_digital' => ['required', 'string', 'max:255'],
-            'pdf_url'       => ['required', 'string', 'max:255'],
+            'firma_digital' => ['nullable', 'string', 'max:255'],
+            'pdf_url'       => ['nullable', 'string', 'max:255'],
+
+            'detalles'                => ['required', 'array', 'min:1', 'max:20'],
+            'detalles.*.medicamento'  => ['required', 'string', 'max:150'],
+            'detalles.*.dosis'        => ['required', 'string', 'max:80'],
+            'detalles.*.frecuencia'   => ['required', 'string', 'max:80'],
+            'detalles.*.duracion'     => ['required', 'string', 'max:80'],
+            'detalles.*.indicaciones' => ['required', 'string', 'max:2000'],
         ]);
+
+        $detalles = $datos['detalles'];
+        unset($datos['detalles']);
 
         if ($usuario->rol === 'medico') {
             $medico = $this->medicoDe($usuario);
@@ -144,16 +159,44 @@ class RecetaController extends Controller
             ], 422);
         }
 
+        if (! in_array($cita->estado, ['confirmada', 'en_curso', 'finalizada'], true)) {
+            return response()->json([
+                'mensaje' => 'Solo se puede emitir receta de una cita confirmada, en curso o finalizada',
+            ], 422);
+        }
+
         $datos['codigo'] = $this->generarCodigo();
         $datos['estado'] = $datos['estado'] ?? 'vigente';
+        // La app no genera firma ni PDF: la firma se calcula aqui y el PDF queda pendiente
+        $datos['firma_digital'] = $datos['firma_digital']
+            ?? hash('sha256', $datos['codigo'] . '|' . $datos['medico_id'] . '|' . $datos['paciente_id'] . '|' . now()->toIso8601String());
+        $datos['pdf_url'] = $datos['pdf_url'] ?? '';
 
-        $receta = Receta::create($datos);
+        // Receta y medicamentos juntos: si algo falla, no queda nada a medias
+        $receta = DB::transaction(function () use ($datos, $detalles) {
+            $nueva = Receta::create($datos);
+            $nueva->detalles()->createMany($detalles);
+            return $nueva;
+        });
 
         BitacoraAuditoria::registrar('crear', 'receta', $receta->id);
 
+        // Aviso al paciente (push + bandeja). Nunca rompe la creacion.
+        $pacienteUsuarioId = Paciente::whereKey($receta->paciente_id)->value('usuario_id');
+        if ($pacienteUsuarioId) {
+            $nombre = trim(($medico->nombres ?? '') . ' ' . ($medico->apellidos ?? ''));
+            Notificador::notificar(
+                (int) $pacienteUsuarioId,
+                'receta',
+                'Nueva receta',
+                ($nombre !== '' ? $nombre : 'Tu médico') . ' te emitió una receta.',
+                ['pantalla' => 'receta', 'receta_id' => $receta->id]
+            );
+        }
+
         return response()->json([
             'mensaje' => 'Receta creada correctamente',
-            'receta'  => $receta->load(['paciente:id,nombres,apellidos', 'medico:id,nombres,apellidos']),
+            'receta'  => $receta->load(['paciente:id,nombres,apellidos', 'medico:id,nombres,apellidos', 'detalles']),
         ], 201);
     }
 
@@ -214,5 +257,40 @@ class RecetaController extends Controller
         BitacoraAuditoria::registrar('eliminar', 'receta', $id);
 
         return response()->json(['mensaje' => 'Receta eliminada correctamente']);
+    }
+
+    //METODO / ENDPOINT PARA RECETAS POR PDF
+        public function pdf(Request $request, Receta $receta)
+    {
+        $usuario = $request->user();
+
+        // Solo el paciente dueño, el medico que la emitio, o admin
+        if ($usuario->rol !== 'admin') {
+            $medicoId = $usuario->rol === 'medico' ? optional($this->medicoDe($usuario))->id : null;
+            $pacienteId = $usuario->rol === 'paciente'
+                ? Paciente::where('usuario_id', $usuario->id)->value('id')
+                : null;
+
+            $permitido = ($medicoId && (int) $medicoId === (int) $receta->medico_id)
+                || ($pacienteId && (int) $pacienteId === (int) $receta->paciente_id);
+
+            if (! $permitido) {
+                return response()->json(['mensaje' => 'No autorizado'], 403);
+            }
+        }
+
+        $receta->load(['paciente', 'medico', 'detalles']);
+
+        $fecha = \Carbon\Carbon::parse($receta->created_at ?? $receta->creado_en ?? now())
+            ->locale('es')
+            ->isoFormat('D [de] MMMM [de] YYYY');
+
+        $pdf = Pdf::loadView('recetas.pdf', ['receta' => $receta, 'fecha' => $fecha])
+            ->setPaper('letter');
+
+        return response()->json([
+            'nombre' => 'receta-' . $receta->codigo . '.pdf',
+            'base64' => base64_encode($pdf->output()),
+        ]);
     }
 }

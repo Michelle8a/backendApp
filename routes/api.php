@@ -391,6 +391,7 @@ Route::middleware(['auth:api', 'rol:admin'])
 Route::middleware(['auth:api', 'rol:paciente,medico,admin'])->group(function () {
     Route::get('/recetas', [RecetaController::class, 'index']);
     Route::get('/recetas/{receta}', [RecetaController::class, 'show']);
+    Route::get('/recetas/{receta}/pdf', [RecetaController::class, 'pdf']);
 });
 
 //crear y actualizar: medico y admin
