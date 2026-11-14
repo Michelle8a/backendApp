@@ -9,8 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE citas MODIFY notas_medico_cifradas TEXT NULL");
-        DB::statement("ALTER TABLE citas MODIFY estado ENUM('pendiente','confirmada','en_curso','cancelada','finalizada','no_asistio') NOT NULL DEFAULT 'pendiente'");
+        // MODIFY es exclusivo de MySQL. En SQLite (pruebas) el esquema ya es compatible.
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE citas MODIFY notas_medico_cifradas TEXT NULL");
+            DB::statement("ALTER TABLE citas MODIFY estado ENUM('pendiente','confirmada','en_curso','cancelada','finalizada','no_asistio') NOT NULL DEFAULT 'pendiente'");
+        }
 
         Schema::table('citas', function (Blueprint $table) {
             $table->foreignId('cancelada_por')->nullable()->constrained('usuarios')->nullOnDelete();
@@ -24,7 +27,9 @@ return new class extends Migration
         });
 
         // Ajusta la lista a lo que ya tengas en mensajes.tipo (existe 'bot')
-        DB::statement("ALTER TABLE mensajes MODIFY tipo ENUM('texto','imagen','archivo','audio','bot','sistema') NOT NULL");
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE mensajes MODIFY tipo ENUM('texto','imagen','archivo','audio','bot','sistema') NOT NULL");
+        }
     }
 
     public function down(): void

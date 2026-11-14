@@ -43,6 +43,7 @@ use App\Http\Controllers\PacienteAlergiaController;
 use App\Http\Controllers\CodigoVerificacionController;
 use App\Http\Controllers\CuentaController;
 use App\Http\Controllers\TriajeController;
+use Illuminate\Routing\Middleware\ValidateSignature;
 use App\Http\Controllers\MedicoDisponibilidadController;
 
 //------------AUTENTICACION (JWT)--------------------
@@ -464,6 +465,12 @@ Route::middleware(['auth:api', 'rol:paciente,medico'])->group(function () {
 //eliminar (moderacion): solo admin
 Route::middleware(['auth:api', 'rol:admin'])
     ->delete('/mensajes/{mensaje}', [MensajeController::class, 'destroy']);
+
+//adjunto de un mensaje: la app recibe un enlace firmado y temporal, sin token.
+//La firma es relativa, asi funciona igual en Expo Go, navegador y el proxy de desarrollo.
+Route::get('/mensajes/{mensaje}/adjunto', [MensajeController::class, 'adjunto'])
+    ->middleware(ValidateSignature::relative())
+    ->name('chat.adjunto');
 
 //------------DETALLE DE RECETA (MEDICAMENTOS)--------------------
 //ver y listar: los tres roles 

@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class MensajeController extends Controller
 {
@@ -81,6 +84,80 @@ class MensajeController extends Controller
     }
 
     /**
+     * Un adjunto subido por la app vive en el disco privado y se guarda como
+     * "chat/{conversacion}/{uuid}__{nombre-original}". Aqui se recupera el
+     * nombre original para mostrarlo en la burbuja (ej. "receta.pdf").
+     */
+    private function nombreAdjunto(Mensaje $m): ?string
+    {
+        if (! $m->adjunto_url || ! in_array($m->tipo, ['imagen', 'archivo'], true)) {
+            return null;
+        }
+
+        $base = basename($m->adjunto_url);
+
+        return Str::contains($base, '__') ? Str::after($base, '__') : $base;
+    }
+
+    /** true si el valor ya es una URL (http, dama://, etc.) y no una ruta del disco privado. */
+    private function esUrlExterna(?string $valor): bool
+    {
+        return $valor !== null && (bool) preg_match('#^[a-z][a-z0-9+.-]*:#i', $valor);
+    }
+
+    /**
+     * Devuelve una URL firmada y relativa (sin host) para el adjunto.
+     *
+     * - Relativa: funciona con Expo Go, el navegador y el proxy de desarrollo
+     *   sin depender de APP_URL (que en local cambia en cada PC).
+     * - Firmada y temporal: el archivo sigue en disco privado; solo se entrega
+     *   a quien tenga el enlace, y el enlace caduca.
+     * - La caducidad es fija (inicio del dia dentro de 7 dias) para que el
+     *   sondeo cada 5 s no genere una URL distinta en cada respuesta.
+     */
+    private function urlAdjunto(Mensaje $m): ?string
+    {
+        $valor = $m->adjunto_url;
+
+        // Los enlaces del bot (ej. dama://agendar) y cualquier URL ya completa se dejan igual
+        if (! $valor
+            || ! in_array($m->tipo, ['imagen', 'archivo'], true)
+            || $this->esUrlExterna($valor)) {
+            return $valor;
+        }
+
+        return URL::temporarySignedRoute(
+            'chat.adjunto',
+            now()->addDays(7)->startOfDay(),
+            ['mensaje' => $m->id],
+            absolute: false,
+        );
+    }
+
+    /** Borra del disco privado el archivo de un mensaje (si es un adjunto subido por la app). */
+    private function borrarAdjunto(Mensaje $m): void
+    {
+        if ($m->adjunto_url && ! $this->esUrlExterna($m->adjunto_url)) {
+            Storage::disk('local')->delete($m->adjunto_url);
+        }
+    }
+
+    /** Nombre seguro para guardar en disco, conservando algo legible para mostrar. */
+    private function nombreParaGuardar(string $nombreOriginal): string
+    {
+        $base = pathinfo($nombreOriginal, PATHINFO_FILENAME);
+        $ext  = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
+
+        // Quita acentos, separadores de ruta y caracteres raros sin perder letras/numeros
+        $base = Str::ascii($base);
+        $base = preg_replace('/[^A-Za-z0-9 ._-]+/', '', $base) ?? '';
+        $base = trim(preg_replace('/\s+/', ' ', $base) ?? '');
+        $base = Str::limit($base, 70, '');
+
+        return ($base !== '' ? $base : 'archivo') . ($ext !== '' ? ".{$ext}" : '');
+    }
+
+    /**
      * El contenido se guarda cifrado; hacia la app siempre sale descifrado
      * y nunca se expone la columna contenido_cifrado.
      */
@@ -98,7 +175,8 @@ class MensajeController extends Controller
             'emisor_id'       => $m->emisor_id,
             'tipo'            => $m->tipo,
             'contenido'       => $contenido,
-            'adjunto_url'     => $m->adjunto_url,
+            'adjunto_url'     => $this->urlAdjunto($m),
+            'adjunto_nombre'  => $this->nombreAdjunto($m),
             'leido'           => (bool) $m->leido,
             'enviado_en'      => $m->enviado_en,
         ];
@@ -141,6 +219,8 @@ class MensajeController extends Controller
     /**
      * POST /conversaciones/{conversacion}/mensajes
      * paciente y medico, solo si participan en la conversacion Y el chat de la cita esta abierto.
+     * Acepta JSON (mensaje de texto) o multipart/form-data con un campo "archivo"
+     * (jpg, jpeg, png, webp o pdf; maximo 10 MB). El tipo lo decide el servidor.
      * El tipo 'bot' y 'sistema' los genera el servidor, no se aceptan desde la app.
      */
     public function store(Request $request, Conversacion $conversacion)
@@ -165,26 +245,51 @@ class MensajeController extends Controller
             }
         }
 
+        $archivo = $request->file('archivo');
+
         $datos = $request->validate([
-            'tipo'        => ['required', Rule::in(['texto', 'imagen', 'archivo'])],
-            'contenido'   => ['required', 'string', 'max:5000'],
-            'adjunto_url' => [
-                Rule::requiredIf(in_array($request->input('tipo'), ['imagen', 'archivo'], true)),
-                'nullable', 'string', 'max:255',
-            ],
+            // El tipo se deduce del archivo cuando viene un adjunto; para texto se sigue aceptando
+            'tipo'      => ['nullable', Rule::in(['texto', 'imagen', 'archivo'])],
+            'contenido' => ['nullable', 'string', 'max:5000'],
+            'archivo'   => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf'],
         ]);
+
+        $contenido = trim((string) ($datos['contenido'] ?? ''));
+
+        if (! $archivo && $contenido === '') {
+            throw ValidationException::withMessages([
+                'contenido' => 'Escribe un mensaje o adjunta una imagen o un PDF.',
+            ]);
+        }
+
+        $tipo = 'texto';
+        $rutaAdjunto = null;
+
+        if ($archivo) {
+            // La decision la toma el servidor mirando el MIME real, no lo que diga la app
+            $tipo = Str::startsWith((string) $archivo->getMimeType(), 'image/') ? 'imagen' : 'archivo';
+
+            $rutaAdjunto = $archivo->storeAs(
+                "chat/{$conversacion->id}",
+                Str::uuid()->toString() . '__' . $this->nombreParaGuardar($archivo->getClientOriginalName()),
+                'local',
+            );
+        }
 
         $mensaje = Mensaje::create([
             'conversacion_id'   => $conversacion->id,
             'emisor_id'         => $usuario->id,
-            'tipo'              => $datos['tipo'],
-            'contenido_cifrado' => Crypt::encryptString($datos['contenido']),
-            'adjunto_url'       => $datos['adjunto_url'] ?? null,
+            'tipo'              => $tipo,
+            'contenido_cifrado' => Crypt::encryptString($contenido),
+            'adjunto_url'       => $rutaAdjunto,
             'leido'             => false,
             'enviado_en'        => now(),
         ]);
 
-        $this->avisarMensaje($conversacion, $usuario->id, $datos);
+        $this->avisarMensaje($conversacion, $usuario->id, [
+            'tipo'      => $tipo,
+            'contenido' => $contenido,
+        ]);
 
         return response()->json([
             'mensaje'      => 'Mensaje enviado correctamente',
@@ -253,11 +358,39 @@ class MensajeController extends Controller
     }
 
     /**
+     * GET /mensajes/{mensaje}/adjunto  (ruta firmada, sin token)
+     *
+     * Sirve la imagen/PDF desde el disco privado. Solo funciona con el enlace
+     * firmado que entrega formatear(); no hay carpeta publica ni URL adivinable.
+     */
+    public function adjunto(Mensaje $mensaje)
+    {
+        $ruta = $mensaje->adjunto_url;
+
+        if (! $ruta || ! in_array($mensaje->tipo, ['imagen', 'archivo'], true) || $this->esUrlExterna($ruta)) {
+            abort(404);
+        }
+
+        $disco = Storage::disk('local');
+
+        if (! $disco->exists($ruta)) {
+            abort(404);
+        }
+
+        return $disco->response($ruta, $this->nombreAdjunto($mensaje), [
+            'Cache-Control'            => 'private, max-age=3600',
+            'X-Content-Type-Options'   => 'nosniff',
+        ]);
+    }
+
+    /**
      * DELETE /mensajes/{mensaje}  (solo admin, moderacion; lo controla la ruta)
      */
     public function destroy(Mensaje $mensaje)
     {
         $id = $mensaje->id;
+
+        $this->borrarAdjunto($mensaje);
 
         $mensaje->delete();
 

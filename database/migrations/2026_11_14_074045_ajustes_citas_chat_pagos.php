@@ -10,8 +10,11 @@ return new class extends Migration
     public function up(): void
     {
         // 1. citas: notas opcionales y estado nuevo 'no_asistio' (se puede repetir sin problema)
-        DB::statement("ALTER TABLE citas MODIFY notas_medico_cifradas TEXT NULL");
-        DB::statement("ALTER TABLE citas MODIFY estado ENUM('pendiente','confirmada','en_curso','cancelada','finalizada','no_asistio') NOT NULL DEFAULT 'pendiente'");
+        // MODIFY es exclusivo de MySQL. En SQLite (pruebas) el esquema ya es compatible.
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE citas MODIFY notas_medico_cifradas TEXT NULL");
+            DB::statement("ALTER TABLE citas MODIFY estado ENUM('pendiente','confirmada','en_curso','cancelada','finalizada','no_asistio') NOT NULL DEFAULT 'pendiente'");
+        }
 
         // 2. citas: cancelación, cierre, pago y reprogramación (solo lo que falte)
         Schema::table('citas', function (Blueprint $table) {
@@ -42,8 +45,10 @@ return new class extends Migration
         });
 
         // 3. 'cita' y 'sistema' ya no dependen de un ENUM
-        DB::statement("ALTER TABLE notificaciones MODIFY tipo VARCHAR(30) NOT NULL");
-        DB::statement("ALTER TABLE mensajes MODIFY tipo VARCHAR(20) NOT NULL");
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE notificaciones MODIFY tipo VARCHAR(30) NOT NULL");
+            DB::statement("ALTER TABLE mensajes MODIFY tipo VARCHAR(20) NOT NULL");
+        }
     }
 
     public function down(): void
