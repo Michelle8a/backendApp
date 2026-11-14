@@ -95,8 +95,17 @@ class PacienteController extends Controller
     }
 
     //PUT
-    public function update(Request $request, Paciente $paciente)
+    public function update(Request $request, ?Paciente $paciente = null)
     {
+        // Desde /mi-paciente no llega {paciente}: se busca el del usuario autenticado
+        if (! $paciente) {
+            $paciente = Paciente::where('usuario_id', $request->user()->id)->first();
+
+            if (! $paciente) {
+                return response()->json(['mensaje' => 'Aun no completas tu perfil de paciente'], 404);
+            }
+        }
+
         $this->autorizar($request, $paciente); // solo el perfil dueño o admin puede modificar
 
         //no se incluye usuario_id porque un paciente no cambia de usuario

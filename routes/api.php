@@ -79,7 +79,7 @@ Route::middleware(['auth:api', 'rol:admin'])->group(function (){
 //el paciente consulta y actualiza su propio perfil
 Route::middleware(['auth:api', 'rol:paciente'])->group(function () {
     Route::get('/mi-paciente', [PacienteController::class, 'miPerfil']);
-    Route::put('/mi-paciente', [PacienteController::class, 'actualizarMiPerfil']);
+    Route::put('/mi-paciente', [PacienteController::class, 'update']);
 });
 
 //listar: solo admin y medico
