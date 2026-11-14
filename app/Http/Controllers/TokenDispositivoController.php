@@ -13,7 +13,7 @@ class TokenDispositivoController extends Controller
     {
         $datos = $request->validate([
             'token_fcm'  => ['required', 'string', 'max:255'],
-            'plataforma' => ['required', 'in:android,ios'],
+            'plataforma' => ['required', 'in:android,ios,web'],
         ]);
 
         $token = TokenDispositivo::updateOrCreate(

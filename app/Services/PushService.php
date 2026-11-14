@@ -53,6 +53,13 @@ class PushService
                     continue;
                 }
 
+                // Log para poder rastrear tickets (errors => token invalido, etc.)
+                Log::info('Expo push ok', [
+                    'usuario_id' => $usuarioId,
+                    'status'     => $respuesta->status(),
+                    'tickets'    => $respuesta->json('data'),
+                ]);
+
                 $this->limpiarTokensInvalidos($lote, $respuesta->json('data') ?? []);
             } catch (\Throwable $e) {
                 Log::warning('Expo push falló: ' . $e->getMessage());
