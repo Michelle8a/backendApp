@@ -232,18 +232,18 @@ class MensajeController extends Controller
         }
 
         // El chat de una cita solo acepta mensajes dentro de su ventana (la regla vive aqui, no solo en la app)
-        $conversacion->loadMissing('cita');
+        // $conversacion->loadMissing('cita');
 
-        if ($conversacion->cita && $conversacion->tipo !== 'triaje') {
-            $estadoChat = $conversacion->cita->estadoChat();
-
-            if ($estadoChat !== 'abierto') {
-                return response()->json([
-                    'mensaje'     => 'El chat de esta cita no esta disponible',
-                    'estado_chat' => $estadoChat,
-                ], 423);
-            }
-        }
+        // if ($conversacion->cita && $conversacion->tipo !== 'triaje') {
+        //     $estadoChat = $conversacion->cita->estadoChat();
+        //
+        //     if ($estadoChat !== 'abierto') {
+        //         return response()->json([
+        //             'mensaje'     => 'El chat de esta cita no esta disponible',
+        //             'estado_chat' => $estadoChat,
+        //         ], 423);
+        //     }
+        // }
 
         $archivo = $request->file('archivo');
 
