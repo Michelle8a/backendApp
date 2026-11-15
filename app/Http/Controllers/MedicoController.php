@@ -15,9 +15,11 @@ class MedicoController extends Controller
     //GET: buscar medicos. Filtros opcionales
     public function index(Request $request)
     {
-        $filtros = $request->validate([
+                $filtros = $request->validate([
             'q' => 'sometimes|string|max:100',
             'centro_salud_id' => 'sometimes|integer',
+            'especialidad_id' => 'sometimes|integer',
+            'idioma_id' => 'sometimes|integer',
             'es_general' => 'sometimes|boolean',
             'verificado' => 'sometimes|boolean', //SOLO LO RESPETA EL ADMIN
         ]);
@@ -42,6 +44,18 @@ class MedicoController extends Controller
 
         if(isset($filtros['es_general'])){
             $consulta->where('es_general', $filtros['es_general']);
+        }
+
+                if(isset($filtros['especialidad_id'])){
+            $consulta->whereHas('especialidades', function ($w) use ($filtros) {
+                $w->where('especialidades.id', $filtros['especialidad_id']);
+            });
+        }
+
+        if(isset($filtros['idioma_id'])){
+            $consulta->whereHas('idiomas', function ($w) use ($filtros) {
+                $w->where('idiomas.id', $filtros['idioma_id']);
+            });
         }
 
         if(isset($filtros['q'])){
