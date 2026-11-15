@@ -23,10 +23,6 @@ class LoginController extends Controller
         return 'correo';
     }
 
-    protected function guard()
-    {
-        return Auth::guard('web');
-    }
 
     protected function credentials(Request $request)
     {
