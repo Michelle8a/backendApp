@@ -10,8 +10,7 @@ use RuntimeException;
  *
  * .env:
  *   GEMINI_API_KEY=...
- *   GEMINI_MODEL=gemini-2.5-flash   (verifica el nombre vigente en Google AI Studio)
- *
+ *   GEMINI_MODEL=gemini-2.5-flash  
  * config/services.php:
  *   'gemini' => [
  *       'key'   => env('GEMINI_API_KEY'),
