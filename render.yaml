@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: backendDAMA
+    runtime: docker
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      - key: APP_KEY
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        sync: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: mysql-96b036c-bdlaravel.g.aivencloud.com
+      - key: DB_PORT
+        value: "17644"
+      - key: DB_DATABASE
+        value: bdlaravel
+      - key: DB_USERNAME
+        value: avnadmin
+      - key: DB_PASSWORD
+        sync: false
+      - key: MYSQL_ATTR_SSL_CA
+        value: ""
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: BROADCAST_CONNECTION
+        value: log
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGO
+        value: HS256
+      - key: JWT_TTL
+        value: "60"
+      - key: JWT_REFRESH_TTL
+        value: "20160"
+      - key: JWT_BLACKLIST_GRACE_PERIOD
+        value: "30"
+      - key: LOG_LEVEL
+        value: error
+      - key: FILESYSTEM_DISK
+        value: local
