@@ -85,4 +85,17 @@ class BitacoraAdminController extends Controller
             ->orderByDesc('fecha')
             ->orderByDesc('id');
     }
+
+    //DELETE /admin/bitacora/{bitacora} -> eliminar un registro
+public function destroy(BitacoraAuditoria $bitacora)
+{
+    $id = $bitacora->id;
+
+    $bitacora->delete();
+
+    // queda constancia de quién borró el registro
+    BitacoraAuditoria::registrar('eliminar', 'bitacora', $id);
+
+    return back()->with('success', 'Registro eliminado correctamente');
+}
 }

@@ -5,8 +5,12 @@
 
     <div class="admin-header">
         <h1>Bitácora de auditoría</h1>
-        <p>Registro de las acciones realizadas en el sistema. Es de solo lectura.</p>
+        <p>Registro de las acciones realizadas en el sistema.</p>
     </div>
+
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
 
     @if ($errors->any())
         <div class="alert alert-danger">
@@ -84,6 +88,7 @@
                     <th>Recurso</th>
                     <th>ID recurso</th>
                     <th>IP</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -109,10 +114,18 @@
                         <td>{{ ucfirst($item->recurso) }}</td>
                         <td>{{ $item->recurso_id }}</td>
                         <td>{{ $item->ip }}</td>
+                        <td>
+                            <form action="{{ route('bitacora.destroy', $item->id) }}" method="POST"
+                                  onsubmit="return confirm('¿Eliminar este registro de la bitácora?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                            </form>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="8" class="empty-state">
                             No hay registros que coincidan con los filtros.
                         </td>
                     </tr>

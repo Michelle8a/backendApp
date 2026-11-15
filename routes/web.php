@@ -125,8 +125,12 @@ Route::middleware(['auth:web', 'rol:admin'])->prefix('admin')->group(function ()
     //------------BITACORA DE AUDITORIA (solo lectura + reporte)--------------------
     Route::get('/bitacora', [BitacoraAdminController::class, 'index'])->name('bitacora.index');
     Route::get('/bitacora/reporte/pdf', [BitacoraAdminController::class, 'pdf'])->name('bitacora.pdf');
+    Route::delete('/bitacora/{bitacora}', [BitacoraAdminController::class, 'destroy'])
+    ->name('bitacora.destroy');
 
     //------------CITAS (solo reporte)--------------------
     Route::get('/citas', [CitaAdminController::class, 'index'])->name('citas.index');
     Route::get('/citas/reporte/pdf', [CitaAdminController::class, 'pdf'])->name('citas.pdf');
 });
+
+
