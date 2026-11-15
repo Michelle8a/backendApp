@@ -26,17 +26,17 @@ class PacienteAlergiaController extends Controller
     }
 
     //POST: agregar una alergia
-    public function store (Request $request)
+    public function store(Request $request)
     {
-        $paciente = $this->paciente($request);
+        $paciente = $this->miPaciente($request);
 
-        $datos = $this->validate([
+        $datos = $request->validate([
             'alergia_id' => [
                 'required',
                 'integer',
                 'exists:alergias,id',
                 //No repetir las mismas alergias para el mismo paciente
-                Rule::uniques('paciente_alergia', 'alergia_id')->where('paciente_id', $paciente->id),
+                Rule::unique('paciente_alergia', 'alergia_id')->where('paciente_id', $paciente->id),
             ],
             'gravedad' => ['required', Rule::in(self::GRAVEDADES)],
         ]);
@@ -53,13 +53,13 @@ class PacienteAlergiaController extends Controller
     {
         $paciente = $this->miPaciente($request);
 
-        $datos + $request->validate([
+        $datos = $request->validate([
             'gravedad' => ['required', Rule::in(self::GRAVEDADES)],
         ]);
 
         $this->exigirRegistrada($paciente, $alergiaId);
 
-        $paciente->alergias()->updateExistingPivot($alergiaId,['gravedad' => $datos['gravedad']]);
+        $paciente->alergias()->updateExistingPivot($alergiaId, ['gravedad' => $datos['gravedad']]);
 
         BitacoraAuditoria::registrar('actualizar', 'paciente_alergia', $paciente->id);
 
