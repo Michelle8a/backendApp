@@ -38,5 +38,9 @@ return [
         'key'   => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
     ],
+    'correo_web' => [
+        'url'   => env('CORREO_WEBHOOK_URL'),
+        'token' => env('CORREO_WEBHOOK_TOKEN'),
+    ],
 
 ];

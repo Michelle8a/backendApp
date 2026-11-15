@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\BitacoraAuditoria;
 use App\Models\CodigoRecuperacion;
 use App\Models\Usuario;
+use App\Services\Correo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 
 class RecuperarContrasenaController extends Controller
@@ -52,12 +52,11 @@ class RecuperarContrasenaController extends Controller
         ]);
 
         try {
-            Mail::raw(
-                "Tu codigo para restablecer la contrasena de DAMA es: {$codigo}\n\n"
-                . 'Vence en ' . self::MINUTOS_VIGENCIA . " minutos. Si no lo solicitaste, ignora este mensaje.",
-                function ($mensaje) use ($usuario) {
-                    $mensaje->to($usuario->correo)->subject('Recuperar contrasena - DAMA');
-                }
+            Correo::enviar(
+                $usuario->correo,
+                'Recuperar contrasena - HiDoctor',
+                "Tu codigo para restablecer la contrasena de HiDoctor es: {$codigo}\n\n"
+                . 'Vence en ' . self::MINUTOS_VIGENCIA . " minutos. Si no lo solicitaste, ignora este mensaje."
             );
         } catch (\Throwable $e) {
             Log::warning('No se pudo enviar el codigo de recuperacion: ' . $e->getMessage());

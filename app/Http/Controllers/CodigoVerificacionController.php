@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CodigoVerificacion;
+use App\Services\Correo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class CodigoVerificacionController extends Controller
 {
@@ -45,13 +46,23 @@ class CodigoVerificacionController extends Controller
             'intentos'    => 0,
         ]);
 
-        Mail::raw(
-            "Tu codigo de verificacion de DAMA es: {$codigo}\n\n"
-            . 'Vence en ' . self::MINUTOS_VIGENCIA . " minutos. Si no lo solicitaste, ignora este mensaje.",
-            function ($mensaje) use ($usuario) {
-                $mensaje->to($usuario->correo)->subject('Codigo de verificacion - DAMA');
-            }
-        );
+        try {
+            Correo::enviar(
+                $usuario->correo,
+                'Codigo de verificacion - HiDoctor',
+                "Tu codigo de verificacion de HiDoctor es: {$codigo}\n\n"
+                . 'Vence en ' . self::MINUTOS_VIGENCIA . " minutos. Si no lo solicitaste, ignora este mensaje."
+            );
+        } catch (\Throwable $e) {
+            Log::error('No se pudo enviar el codigo de verificacion: ' . $e->getMessage());
+
+            //se descarta el codigo para no bloquear el reenvio de 60 segundos
+            CodigoVerificacion::where('usuario_id', $usuario->id)->delete();
+
+            return response()->json([
+                'mensaje' => 'No pudimos enviar el correo. Intenta de nuevo en un momento.',
+            ], 503);
+        }
 
         return response()->json([
             'mensaje'          => 'Te enviamos un codigo a tu correo',
