@@ -5,8 +5,15 @@
 
     <div class="admin-header">
         <h1>Usuarios</h1>
-        <p>Consulta las cuentas del sistema y activa o desactiva su acceso.</p>
+        <p>Administra las cuentas del sistema: crea, edita, activa o desactiva su acceso.</p>
     </div>
+
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    @endif
 
     {{-- Filtros --}}
     <div class="admin-card">
@@ -47,9 +54,12 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-        <span class="text-muted">
-            {{ $usuarios->total() }} {{ $usuarios->total() === 1 ? 'usuario encontrado' : 'usuarios encontrados' }}
-        </span>
+        <div class="d-flex align-items-center gap-3">
+            <a class="btn btn-success btn-sm" href="{{ route('admin.usuarios.create') }}">Agregar nuevo usuario</a>
+            <span class="text-muted">
+                {{ $usuarios->total() }} {{ $usuarios->total() === 1 ? 'usuario encontrado' : 'usuarios encontrados' }}
+            </span>
+        </div>
         <a class="btn btn-danger btn-sm" href="{{ route('admin.usuarios.pdf', request()->query()) }}">
             Descargar reporte PDF
         </a>
@@ -94,18 +104,30 @@
                             </span>
                         </td>
                         <td>{{ $item->created_at?->format('d/m/Y') }}</td>
-                        <td>
+                        <td class="text-nowrap">
+                            <a class="btn btn-warning btn-sm" href="{{ route('admin.usuarios.edit', $item->id) }}">
+                                Modificar
+                            </a>
+
                             @if ($esYo)
-                                <span class="text-muted small">Tu cuenta</span>
+                                <span class="text-muted small ms-1">Tu cuenta</span>
                             @else
                                 <button type="button"
-                                    class="btn btn-sm {{ $activo ? 'btn-danger' : 'btn-success' }}"
+                                    class="btn btn-sm {{ $activo ? 'btn-secondary' : 'btn-success' }}"
                                     data-url="{{ route('admin.usuarios.estado', $item->id) }}"
                                     data-token="{{ csrf_token() }}"
                                     data-nuevo="{{ $activo ? 'suspendido' : 'activo' }}"
                                     data-correo="{{ $item->correo }}"
                                     onclick="cambiarEstado(this)">
                                     {{ $activo ? 'Desactivar' : 'Activar' }}
+                                </button>
+
+                                <button type="button" class="btn btn-danger btn-sm"
+                                    data-url="{{ route('admin.usuarios.destroy', $item->id) }}"
+                                    data-token="{{ csrf_token() }}"
+                                    data-correo="{{ $item->correo }}"
+                                    onclick="destroy(this)">
+                                    Eliminar
                                 </button>
                             @endif
                         </td>

@@ -53,3 +53,53 @@ function cambiarEstado(button) {
         }
     });
 }
+
+function destroy(button) {
+    const url = button.dataset.url;
+    const token = button.dataset.token;
+    const correo = button.dataset.correo;
+
+    Swal.fire({
+        title: '¿Eliminar usuario?',
+        text: 'Se eliminará la cuenta de ' + correo + '. Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.res) {
+                throw new Error(data.message || 'No se pudo eliminar el usuario.');
+            }
+
+            await Swal.fire({
+                title: '¡Eliminado!',
+                text: data.message,
+                icon: 'success'
+            });
+
+            window.location.reload();
+
+        } catch (error) {
+            Swal.fire({
+                title: 'No se pudo eliminar',
+                text: error.message || 'Ocurrió un error al eliminar.',
+                icon: 'error'
+            });
+        }
+    });
+}

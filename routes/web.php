@@ -27,14 +27,17 @@ Auth::routes(['register' => false]);
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 //------------MEDICOS--------------------
-Route::middleware(['auth:web', 'rol:admin'])->prefix('admin/medicos')->group(function () {
-    Route::get('/reporte/pdf', [MedicoAdminController::class, 'pdf'])->name('medico.pdf');
+Route::middleware(['auth', 'rol:admin'])->prefix('admin/medicos')->group(function () {
+    Route::get('/reporte/pdf', [MedicoAdminController::class, 'pdf'])->name('medico.pdf'); // antes que {medico}
     Route::get('/', [MedicoAdminController::class, 'index'])->name('medico.index');
     Route::get('/crear', [MedicoAdminController::class, 'create'])->name('medico.create');
     Route::post('/', [MedicoAdminController::class, 'store'])->name('medico.store');
     Route::get('/{medico}', [MedicoAdminController::class, 'show'])->name('medico.show');
     Route::get('/{medico}/editar', [MedicoAdminController::class, 'edit'])->name('medico.edit');
     Route::put('/{medico}', [MedicoAdminController::class, 'update'])->name('medico.update');
+    Route::post('/{medico}/horarios', [MedicoAdminController::class, 'storeHorario'])->name('medico.horario.store');
+    Route::put('/horarios/{horario}', [MedicoAdminController::class, 'updateHorario'])->name('medico.horario.update');
+    Route::delete('/horarios/{horario}', [MedicoAdminController::class, 'destroyHorario'])->name('medico.horario.destroy');
     Route::patch('/{medico}/verificar', [MedicoAdminController::class, 'verificar'])->name('medico.verificar');
     Route::delete('/{medico}', [MedicoAdminController::class, 'destroy'])->name('medico.destroy');
 });
@@ -52,8 +55,13 @@ Route::middleware(['auth:web', 'rol:admin'])
 
         //------------USUARIOS--------------------
         Route::get('/usuarios', [UsuarioAdminController::class, 'index'])->name('usuarios.index');
+        Route::get('/usuarios/create', [UsuarioAdminController::class, 'create'])->name('usuarios.create');
         Route::get('/usuarios/reporte/pdf', [UsuarioAdminController::class, 'pdf'])->name('usuarios.pdf');
+        Route::post('/usuarios', [UsuarioAdminController::class, 'store'])->name('usuarios.store');
+        Route::get('/usuarios/{usuario}/edit', [UsuarioAdminController::class, 'edit'])->name('usuarios.edit');
+        Route::put('/usuarios/{usuario}', [UsuarioAdminController::class, 'update'])->name('usuarios.update');
         Route::patch('/usuarios/{usuario}/estado', [UsuarioAdminController::class, 'cambiarEstado'])->name('usuarios.estado');
+        Route::delete('/usuarios/{usuario}', [UsuarioAdminController::class, 'destroy'])->name('usuarios.destroy');
 
         //------------IDIOMAS--------------------
         //el reporte va ANTES del resource para que no lo confunda con {idioma}

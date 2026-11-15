@@ -6,23 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\BitacoraAuditoria;
 use App\Models\CentroSalud;
 use App\Models\Especialidad;
+use App\Models\HorarioMedico;
 use App\Models\Idioma;
 use App\Models\Medico;
 use App\Models\Usuario;
-use App\Services\Notificador;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 /**
  * Vistas web del panel Admin para gestionar médicos.
- * (El MedicoController original sigue siendo la API para la app móvil.)
  */
 class MedicoAdminController extends Controller
 {
+    //dia_semana: 1 = Lunes ... 7 = Domingo (ISO-8601)
+    private const DIAS = [
+        1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves',
+        5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo',
+    ];
+
     /* ---------- consulta compartida por el listado y el PDF ---------- */
     private function consultaFiltrada(Request $request)
     {
@@ -107,9 +113,89 @@ class MedicoAdminController extends Controller
     /* ---------- VER DETALLE ---------- */
     public function show(Medico $medico)
     {
-        $medico->load(['usuario', 'centro_salud', 'especialidades', 'idiomas'])->loadCount('citas');
+        $medico->load([
+            'usuario', 'centro_salud', 'especialidades', 'idiomas',
+            'horarios' => fn ($q) => $q->orderBy('dia_semana')->orderBy('hora_inicio'),
+        ])->loadCount('citas');
 
-        return view('admin.medico.show', compact('medico'));
+        $dias = self::DIAS;
+
+        return view('admin.medico.show', compact('medico', 'dias'));
+    }
+
+    /* ---------- HORARIOS: agregar, modificar y eliminar ( se borran en cascada con el médico) ---------- */
+    public function storeHorario(Request $request, Medico $medico)
+    {
+        $datos = $request->validate([
+            'dia_semana'  => 'required|integer|between:1,7',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fin'    => 'required|date_format:H:i|after:hora_inicio',
+        ]);
+
+        $haySolape = HorarioMedico::where('medico_id', $medico->id)
+            ->where('dia_semana', $datos['dia_semana'])
+            ->where('hora_inicio', '<', $datos['hora_fin'])
+            ->where('hora_fin', '>', $datos['hora_inicio'])
+            ->exists();
+
+        if ($haySolape) {
+            return back()->withInput()->withErrors([
+                'hora_inicio' => 'El horario se cruza con otro ya registrado para ese día.',
+            ]);
+        }
+
+        $medico->horarios()->create($datos);
+        BitacoraAuditoria::registrar('actualizar', 'medico', $medico->id);
+
+        return redirect()->route('medico.show', $medico->id)->with('ok', 'Horario agregado correctamente.');
+    }
+
+    public function updateHorario(Request $request, HorarioMedico $horario)
+    {
+        $validador = Validator::make($request->all(), [
+            'dia_semana'  => 'required|integer|between:1,7',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fin'    => 'required|date_format:H:i|after:hora_inicio',
+        ]);
+
+        $errores = $validador->fails() ? $validador->errors() : null;
+
+        if (! $errores) {
+            $datos = $validador->validated();
+
+            $haySolape = HorarioMedico::where('medico_id', $horario->medico_id)
+                ->where('id', '!=', $horario->id)
+                ->where('dia_semana', $datos['dia_semana'])
+                ->where('hora_inicio', '<', $datos['hora_fin'])
+                ->where('hora_fin', '>', $datos['hora_inicio'])
+                ->exists();
+
+            if ($haySolape) {
+                $validador->errors()->add('hora_inicio', 'El horario se cruza con otro ya registrado para ese día.');
+                $errores = $validador->errors();
+            }
+        }
+
+        if ($errores) {
+            return back()
+                ->withInput()
+                ->withErrors($errores, 'horarioEdit')
+                ->with('horario_editando', $horario->id);
+        }
+
+        $horario->update($datos);
+        BitacoraAuditoria::registrar('actualizar', 'medico', $horario->medico_id);
+
+        return redirect()->route('medico.show', $horario->medico_id)->with('ok', 'Horario actualizado correctamente.');
+    }
+
+    public function destroyHorario(HorarioMedico $horario)
+    {
+        $medicoId = $horario->medico_id;
+        $horario->delete();
+        BitacoraAuditoria::registrar('actualizar', 'medico', $medicoId);
+
+        return response()->json(['res' => true]);
     }
 
     /* ---------- CREAR ---------- */
@@ -201,8 +287,6 @@ class MedicoAdminController extends Controller
             'idiomas.*'        => 'integer|exists:idiomas,id',
         ]);
 
-        $estabaVerificado = (bool) $medico->verificado;
-
         DB::transaction(function () use ($datos, $medico) {
             $telefono       = $datos['telefono'] ?? null;
             $especialidades = $datos['especialidades'] ?? [];
@@ -217,41 +301,16 @@ class MedicoAdminController extends Controller
 
         BitacoraAuditoria::registrar('actualizar', 'medico', $medico->id);
 
-        if (! $estabaVerificado && (bool) $medico->fresh()->verificado) {
-            $this->avisarVerificacion($medico);
-        }
-
         return redirect()->route('medico.index')->with('ok', 'Médico actualizado correctamente.');
     }
 
     /* ---------- VERIFICAR / QUITAR VERIFICACION (AJAX) ---------- */
-        public function verificar(Medico $medico)
+    public function verificar(Medico $medico)
     {
         $medico->forceFill(['verificado' => ! $medico->verificado])->save();
         BitacoraAuditoria::registrar('actualizar', 'medico', $medico->id);
 
-        // Solo avisa al pasar a verificado, no al quitar la verificación
-        if ($medico->verificado) {
-            $this->avisarVerificacion($medico);
-        }
-
         return response()->json(['res' => true, 'verificado' => $medico->verificado]);
-    }
-
-        /** Avisa al médico (push + bandeja) que ya fue verificado. Nunca rompe la acción del admin. */
-    private function avisarVerificacion(Medico $medico): void
-    {
-        if (! $medico->usuario_id) {
-            return;
-        }
-
-        Notificador::notificar(
-            (int) $medico->usuario_id,
-            'verificacion',
-            'Cuenta verificada',
-            'Tu perfil fue verificado. Ya puedes recibir citas de pacientes.',
-            ['pantalla' => 'perfil']
-        );
     }
 
     /* ---------- ELIMINAR (AJAX) ---------- */
